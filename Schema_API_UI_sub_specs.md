@@ -55,91 +55,101 @@ This schema strictly targets PostgreSQL 16+. It enforces data integrity at the d
 | `created_at`           | `TIMESTAMPTZ`   | `NOT NULL, DEFAULT NOW()`                                  | Timestamp of creation.     |
 | `updated_at`           | `TIMESTAMPTZ`   | `NOT NULL, DEFAULT NOW()`                                  | Timestamp of last modification. |
 
-2. API & Route Specifications
+The application relies on standard form submissions and HTMX partial requests. There are no JSON-based REST endpoints; all payloads use `application/x-www-form-urlencoded`.
 
-The application relies on standard form submissions and HTMX partial requests. There are no JSON-based REST endpoints in this architecture. All data payloads are application/x-www-form-urlencoded.
+## 2. API & Route Specification
+### 2.1 Authentication & household routes (standard HTML)
 
-2.1 Authentication & Household Routes (Standard HTML)
-Method,Endpoint,Payload / Form Data,Response
-GET,/login,None,Full HTML Page (Login form)
-POST,/login,"username, password",302 Redirect to /grocery or 401 Form Error
-POST,/logout,None,302 Redirect to /login
-POST,/household/join,invite_code,302 Redirect to /grocery
+| Method | Endpoint          | Payload / form data              | Response                                                                 |
+| :----- | :---------------- | :------------------------------- | :----------------------------------------------------------------------- |
+| `GET`  | `/login`          | None                             | Full HTML page (login form).                                             |
+| `POST` | `/login`          | `username`, `password`           | `302` redirect to `/grocery`, or `401` with form error.                  |
+| `POST` | `/logout`         | None                             | `302` redirect to `/login`.                                              |
+| `POST` | `/household/join` | `invite_code`                    | `302` redirect to `/grocery`.                                            |
 
-2.2 Grocery Routes (HTMX Optimized)
-Method,Endpoint,Payload / Form Data,Response
-GET,/grocery,None,Full HTML Page
-GET,/grocery/search,q (Query string),HTML Fragment (Dropdown list of <li> items matching favorites/history)
-POST,/grocery/items,"name, quantity, unit, note",HTML Fragment (Updated active items list) OR 302 Redirect
-POST,/grocery/items/<id>/toggle,None,HTML Fragment (The updated individual item <tr> or <li> to be swapped)
-POST,/grocery/confirm,None,HTML Fragment (Clears the checked items list) OR 302 Redirect
+### 2.2 Grocery routes (HTMX)
 
-2.3 Favorites Routes (HTMX Optimized)
-Method,Endpoint,Payload / Form Data,Response
-GET,/favorites,None,Full HTML Page
-POST,/favorites,"name, quantity, unit, note",HTML Fragment (Updated favorites list)
-DELETE,/favorites/<id>,None,200 OK (Empty response to remove DOM element)
-POST,/favorites/<id>/quick-add,None,HTML Fragment (Feedback message + triggers list refresh)
+| Method | Endpoint                       | Payload / form data              | Response                                                                                         |
+| :----- | :----------------------------- | :------------------------------- | :----------------------------------------------------------------------------------------------- |
+| `GET`  | `/grocery`                     | None                             | Full HTML page.                                                                                  |
+| `GET`  | `/grocery/search`              | `q` (query string)               | HTML fragment: dropdown of `<li>` items matching favorites/history.                              |
+| `POST` | `/grocery/items`               | `name`, `quantity`, `unit`, `note` | HTML fragment (updated active list) or `302` redirect.                                         |
+| `POST` | `/grocery/items/<id>/toggle`   | None                             | HTML fragment: updated row (`<tr>` or `<li>`) for swap.                                        |
+| `POST` | `/grocery/confirm`             | None                             | HTML fragment (clears checked list) or `302` redirect.                                           |
 
-3. UI & HTMX Component Specifications
+### 2.3 Favorites routes (HTMX)
 
-The UI avoids complex state management by leveraging HTMX attributes directly on HTML elements to dictate backend interactions and DOM swaps.
-3.1 Global Layout (base.html)
+| Method   | Endpoint                    | Payload / form data                | Response                                               |
+| :------- | :-------------------------- | :--------------------------------- | :----------------------------------------------------- |
+| `GET`    | `/favorites`                | None                               | Full HTML page.                                        |
+| `POST`   | `/favorites`                | `name`, `quantity`, `unit`, `note` | HTML fragment (updated favorites list).              |
+| `DELETE` | `/favorites/<id>`           | None                               | `200 OK`, empty body (remove DOM node).                |
+| `POST`   | `/favorites/<id>/quick-add` | None                               | HTML fragment (feedback + list refresh trigger).     |
 
-    Viewport: <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> to prevent input zoom on mobile browsers.
+The UI avoids complex client-side state by attaching HTMX attributes to HTML elements for backend calls and DOM swaps.
 
-    Navigation: Bottom fixed navigation bar (Tailwind: fixed bottom-0 w-full border-t bg-white).
+### 3.1 Global layout (`base.html`)
 
-3.2 Add Item Component & Search
+| Concern    | Specification |
+| :--------- | :-------------- |
+| **Viewport** | `<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">` — reduces unwanted zoom on mobile inputs. |
+| **Navigation** | Bottom-fixed bar (Tailwind: `fixed bottom-0 w-full border-t bg-white`). |
 
-    Search Input: A text input with an HTMX trigger for real-time suggestions.
+### 3.2 Add item & search
 
-    HTMX Attributes on Input:
+| Concern | Specification |
+| :------ | :-------------- |
+| **Search input** | Text input with HTMX-driven live suggestions. |
+| **Form submit** | `POST` to `/grocery/items`; target the main list container to swap in the new row. |
 
-        hx-get="/grocery/search"
+**HTMX on search input**
 
-        hx-trigger="keyup changed delay:300ms, search"
+| Attribute    | Value |
+| :----------- | :---- |
+| `hx-get`     | `/grocery/search` |
+| `hx-trigger` | `keyup changed delay:300ms, search` |
+| `hx-target`  | `#search-results` |
+| `hx-swap`    | `innerHTML` |
 
-        hx-target="#search-results"
+### 3.3 Active grocery list
 
-        hx-swap="innerHTML"
+| Concern | Specification |
+| :------ | :-------------- |
+| **Row layout** | Flex row (Tailwind: `flex justify-between items-center p-4 border-b`). |
+| **Toggle** | Checkbox or row click issues the toggle request. |
+| **Checked state** | Server renders strikethrough/muted styles (Tailwind: `line-through text-gray-400 bg-gray-50`) before returning the fragment. |
 
-    Form Submission: Submitting the form posts to /grocery/items, targeting the main list container to swap the newly appended item.
+**HTMX on row**
 
-3.3 Active Grocery List Component
+| Attribute  | Value |
+| :--------- | :---- |
+| `hx-post`   | `/grocery/items/{{ item.id }}/toggle` |
+| `hx-target` | `this` |
+| `hx-swap`   | `outerHTML` |
 
-    List Item Structure: Flexbox container for row layout (Tailwind: flex justify-between items-center p-4 border-b).
+### 3.4 Confirm purchase
 
-    Toggle Action: Clicking the checkbox or item row fires a toggle request.
+| Concern | Specification |
+| :------ | :-------------- |
+| **Trigger** | Sticky control below the checked-items list. |
+| **Action** | `hx-post="/grocery/confirm"`. |
 
-    HTMX Attributes on Row:
+**HTMX on confirm control**
 
-        hx-post="/grocery/items/{{ item.id }}/toggle"
+| Attribute   | Value |
+| :---------- | :---- |
+| `hx-target` | `#checked-items-container` |
+| `hx-swap`   | `innerHTML` — replace with empty state or success message. |
 
-        hx-target="this"
+### 3.5 Polling (optional / V1 edge case)
 
-        hx-swap="outerHTML"
+Without WebSockets, the main list can stay loosely in sync via HTMX polling on the list container.
 
-    State Styling: Checked items receive distinct styling (Tailwind: line-through text-gray-400 bg-gray-50) applied server-side before the HTML fragment is returned.
-
-3.4 Confirm Purchase Component
-
-    Trigger: A sticky button located below the checked items list.
-
-    Behavior: Fires hx-post="/grocery/confirm".
-
-    HTMX Attributes:
-
-        hx-target="#checked-items-container"
-
-        hx-swap="innerHTML" (replaces the container with an empty state or success message).
-
-3.5 Polling Implementation (Optional/V1 Edge Case)
-
-    To keep multiple users in sync without WebSockets, the main list container can utilize HTMX polling.
-
-    HTMX Attributes: hx-get="/grocery/fragments/list" hx-trigger="every 15s" hx-swap="innerHTML".
-
+| Attribute    | Value |
+| :----------- | :---- |
+| `hx-get`     | `/grocery/fragments/list` |
+| `hx-trigger` | `every 15s` |
+| `hx-swap`    | `innerHTML` |
 
 ### V2 Roadmap Note: Historical Data & Indexing
 
