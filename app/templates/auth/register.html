@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<h1>Create Household Account</h1>
+<form method="POST">
+  {{ form.hidden_tag() }}
+  <div>
+    {{ form.username.label }}
+    {{ form.username() }}
+    {% for error in form.username.errors %}
+      <p class="error">{{ error }}</p>
+    {% endfor %}
+  </div>
+  <div>
+    {{ form.password.label }}
+    {{ form.password() }}
+    {% for error in form.password.errors %}
+      <p class="error">{{ error }}</p>
+    {% endfor %}
+  </div>
+  <div>
+    {{ form.confirm_password.label }}
+    {{ form.confirm_password() }}
+    {% for error in form.confirm_password.errors %}
+      <p class="error">{{ error }}</p>
+    {% endfor %}
+  </div>
+  <div>
+    {{ form.household_name.label }}
+    {{ form.household_name() }}
+    {% for error in form.household_name.errors %}
+      <p class="error">{{ error }}</p>
+    {% endfor %}
+  </div>
+  <button type="submit">{{ form.submit.label.text }}</button>
+</form>
+<p>Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+<p>Have an invite code? <a href="{{ url_for('auth.register_join') }}">Join a household</a></p>
+{% endblock %}

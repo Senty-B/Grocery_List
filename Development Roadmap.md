@@ -1,1 +1,1 @@
-PRD → Technical Architecture Specification → Implementation Roadmap → Schema/API/UI sub-specs → Backlog/Tickets → Implementation → Testing and Release
+PRD (done) → Technical Architecture Specification (done) → Route Contract (done) → Concurrency Duplicate Merge Design (done) → Schema/API/UI sub-specs (done) → Implementation Roadmap (done) → Tickets (done) → Implementation (pending) → Production Cutover Runbook (done) → Testing and Release (pending)

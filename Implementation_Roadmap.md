@@ -6,6 +6,9 @@
 
 This roadmap translates the PDR, Technical Architecture, and Schema specifications into concrete, sequential implementation tickets. Each ticket includes clear dependencies, estimated effort, and acceptance criteria.
 
+Canonical source of truth for routes and HTMX interaction behavior: `Route_Contract.md`.
+Canonical source of truth for concurrency-safe duplicate merges: `Concurrency_Duplicate_Merge_Design.md`.
+
 ---
 
 ## Executive Summary
@@ -98,6 +101,9 @@ Configure PostgreSQL connection, set up Alembic migrations, and create models fo
   - `FavoriteItem` (`app/models/favorite_item.py`)
   - `ActivityLog`
 - Add `BaseModel` abstract class with timestamps
+- Add `normalized_unit` and `normalized_note` to `GroceryItem` model
+- Add partial unique index migration for active dedupe key:
+  - `(household_id, normalized_name, normalized_unit, normalized_note)` where `status='active'`
 - Generate initial migration
 - Verify `alembic upgrade head` applies cleanly
 
@@ -116,6 +122,7 @@ favorite_items = db.relationship('FavoriteItem', backref='household', lazy='dyna
 - `alembic downgrade -1` removes tables cleanly
 - All models have correct relationships
 - Database indices created per schema spec
+- Active duplicate dedupe index exists and is validated in migration tests
 
 ---
 
@@ -229,7 +236,7 @@ Implement the core grocery list functionality: add items, toggle status, confirm
 
 - Create `app/grocery/__init__.py` with blueprint
 - Create `app/grocery/services.py`:
-  - `add_grocery_item()` - with duplicate detection/merge
+  - `add_grocery_item()` - with atomic UPSERT merge
   - `toggle_item_status()` - active ↔ checked
   - `confirm_purchase()` - delete all checked items
   - `get_grocery_list()` - active + checked items
@@ -243,9 +250,9 @@ Implement the core grocery list functionality: add items, toggle status, confirm
 - Create `app/grocery/forms.py`:
   - `AddItemForm`
   - `QuickAddForm`
-- Implement duplicate detection:
-  - Same normalized name + unit + note
-  - Increment quantity if duplicate
+- Implement duplicate merge as a single SQL statement:
+  - `INSERT ... ON CONFLICT ... DO UPDATE`
+  - Conflict target: active dedupe key from schema
 
 #### HTMX Routes
 
@@ -262,6 +269,7 @@ Implement the core grocery list functionality: add items, toggle status, confirm
 
 - Add item with name, quantity, unit, note
 - Duplicate items merge quantities
+- Concurrent duplicate adds do not create extra active rows
 - Toggle active ↔ checked state
 - Confirm purchase removes checked items
 - Search suggests from favorites and history
@@ -290,7 +298,7 @@ Implement household-wide favorites for quick-add functionality.
 - Create `app/favorites/routes.py`:
   - `GET /favorites` - management page
   - `POST /favorites` - add new
-  - `DELETE /favorites/<id>` - remove
+- `POST /favorites/<id>/delete` - remove
   - `POST /favorites/<id>/reorder` - change order
   - `POST /favorites/<id>/quick-add` - add to grocery
 - Create `app/favorites/forms.py`:
@@ -544,7 +552,7 @@ Build favorites management page with HTMX-powered interactions.
 | Method | Endpoint                  | HTMX Attrs                               |
 | ------ | ------------------------- | ---------------------------------------- |
 | POST   | `/favorites`              | `hx-post`, `hx-target="#favorites-list"` |
-| DELETE | `/favorites/<id>`         | `hx-delete`, `hx-swap="delete"`          |
+| POST   | `/favorites/<id>/delete`  | `hx-post`, `hx-swap="delete"`            |
 | POST   | `/favorites/<id>/reorder` | `hx-post`, `hx-swap="outerHTML"`         |
 
 
@@ -631,6 +639,7 @@ volumes:
 #### Description
 
 Set up production deployment with reverse proxy and SSL.
+Canonical execution guide for go-live: `Production_Cutover_Runbook.md`.
 
 #### Tasks
 

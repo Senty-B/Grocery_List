@@ -1,0 +1,46 @@
+services:
+  web:
+    image: grocery-app:${RELEASE_TAG}
+    container_name: grocery_web
+    env_file:
+      - /opt/grocery-app/shared/env/.env.prod
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "5000"
+    ports:
+      - "127.0.0.1:18080:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/health || curl -fsS http://localhost:5000/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - grocery_net
+
+  db:
+    image: postgres:16-alpine
+    container_name: grocery_db
+    env_file:
+      - /opt/grocery-app/shared/env/.env.prod
+    volumes:
+      - grocery_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    networks:
+      - grocery_net
+
+volumes:
+  grocery_pg_data:
+  grocery_logs:
+
+networks:
+  grocery_net:
+    name: grocery_net

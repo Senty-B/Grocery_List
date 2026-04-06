@@ -353,6 +353,7 @@ Represents domain-relevant audit events.
 | grocery_item.household_id |
 | grocery_item.household_id + status |
 | grocery_item.household_id + normalized_name |
+| UNIQUE partial index on grocery_item `(household_id, normalized_name, normalized_unit, normalized_note)` where status is active |
 | favorite_item.household_id + sort_order |
 | favorite_item.household_id + normalized_name |
 
@@ -364,7 +365,9 @@ Represents domain-relevant audit events.
 
 #### 8.5 Duplicate item handling
 
-Duplicate management is an application-level rule backed by transactional queries.
+Canonical implementation details: `Concurrency_Duplicate_Merge_Design.md`.
+
+Duplicate management is DB-enforced and write-path atomic.
 
 **Definition of duplicate**
 
@@ -378,8 +381,10 @@ Duplicate management is an application-level rule backed by transactional querie
 
 **Behavior**
 
-- if duplicate exists, increment quantity rather than insert a new row
-- if no duplicate exists, create a new row
+- add-item uses one `INSERT ... ON CONFLICT ... DO UPDATE` statement
+- conflict target is the active-item dedupe key: household + normalized name + normalized unit + normalized note
+- if duplicate exists, quantity is incremented
+- if no duplicate exists, a new active row is inserted
 
 This keeps the visible list cleaner while remaining predictable.
 
@@ -420,6 +425,8 @@ The app uses standard HTTP requests with HTML responses and partial updates.
 - HTMX partial responses for in-page updates when useful
 
 #### 10.2 Route strategy
+
+Canonical source of truth: `Route_Contract.md`.
 
 | Area | Method | Path |
 |------|--------|------|
@@ -546,6 +553,7 @@ Rely on PostgreSQL transactions and deterministic application logic.
 
 - each write occurs in a transaction
 - database commit defines authoritative order
+- duplicate adds are resolved via DB-enforced active dedupe index + atomic UPSERT
 - after a write, the UI reloads current state
 - page focus refresh and optional lightweight polling improve visibility of shared changes
 

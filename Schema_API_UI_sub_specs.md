@@ -36,6 +36,8 @@ This schema strictly targets PostgreSQL 16+. It enforces data integrity at the d
 | `household_id`       | `INTEGER`       | `NOT NULL, REFERENCES household(id) ON DELETE CASCADE` | Household association.                               |
 | `name`               | `VARCHAR(100)`  | `NOT NULL`                                             | Original user input.                                 |
 | `normalized_name`    | `VARCHAR(100)`  | `NOT NULL`                                             | Lowercased, stripped string for duplicate detection. |
+| `normalized_unit`    | `VARCHAR(20)`   | `NOT NULL, DEFAULT ''`                                 | Canonical unit value for dedupe key.                 |
+| `normalized_note`    | `VARCHAR(255)`  | `NOT NULL, DEFAULT ''`                                 | Canonical note value for dedupe key.                 |
 | `quantity_value`     | `NUMERIC(10,2)` | `NOT NULL, DEFAULT 1.00`                               | Supports decimals (e.g., 1.5 kg).                    |
 | `unit`               | `VARCHAR(20)`   | `NULL`                                                 | Optional unit (kg, stück, flasche).                  |
 | `note`               | `VARCHAR(255)`  | `NULL`                                                 | Optional descriptor.                                 |
@@ -45,6 +47,24 @@ This schema strictly targets PostgreSQL 16+. It enforces data integrity at the d
 | `created_by_user_id` | `INTEGER`       | `NOT NULL, REFERENCES users(id) ON DELETE RESTRICT`    | Original author.                                     |
 | `created_at`         | `TIMESTAMPTZ`   | `NOT NULL, DEFAULT NOW()`                              | Timestamp of creation.                               |
 | `updated_at`         | `TIMESTAMPTZ`   | `NOT NULL, DEFAULT NOW()`                              | Timestamp of last modification.                      |
+
+
+### 1.3.1 Concurrency-safe duplicate merge constraints
+
+Duplicate behavior for active items is enforced by database index + UPSERT, not by read-then-write checks.
+
+```sql
+CREATE UNIQUE INDEX uq_grocery_active_dedupe
+ON grocery_item (household_id, normalized_name, normalized_unit, normalized_note)
+WHERE status = 'active';
+```
+
+Add-item writes should use one atomic statement:
+
+```sql
+INSERT ... ON CONFLICT (...) WHERE status = 'active'
+DO UPDATE SET quantity_value = grocery_item.quantity_value + EXCLUDED.quantity_value;
+```
 
 
 ### 1.4 `favorite_item`
@@ -67,6 +87,8 @@ This schema strictly targets PostgreSQL 16+. It enforces data integrity at the d
 The application relies on standard form submissions and HTMX partial requests. There are no JSON-based REST endpoints; all payloads use `application/x-www-form-urlencoded`.
 
 ## 2. API & Route Specification
+
+Canonical source of truth: `Route_Contract.md`. This section must stay aligned with it.
 
 ### 2.1 Authentication & household routes (standard HTML)
 
@@ -98,7 +120,7 @@ The application relies on standard form submissions and HTMX partial requests. T
 | -------- | --------------------------- | ---------------------------------- | ------------------------------------------------ |
 | `GET`    | `/favorites`                | None                               | Full HTML page.                                  |
 | `POST`   | `/favorites`                | `name`, `quantity`, `unit`, `note` | HTML fragment (updated favorites list).          |
-| `DELETE` | `/favorites/<id>`           | None                               | `200 OK`, empty body (remove DOM node).          |
+| `POST`   | `/favorites/<id>/delete`    | None                               | HTML fragment or `200 OK`, removes row in UI.    |
 | `POST`   | `/favorites/<id>/quick-add` | None                               | HTML fragment (feedback + list refresh trigger). |
 
 

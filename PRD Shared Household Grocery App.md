@@ -128,6 +128,7 @@ The product is intentionally narrow in v1. It is not a full household organizer 
 
 - Only one active item with the same normalized name + unit + note should exist at a time.
 - If a matching active item already exists, the app increments its quantity instead of creating a duplicate row
+- This behavior must be enforced with a database-level uniqueness rule for active items, not only by application checks.
 - Example:
   - adding “Milk, 1 bottle” twice results in one entry with quantity 2 bottles
 
@@ -158,6 +159,7 @@ This preserves the benefit of reversible staging without introducing unnecessary
 - No queue-based locking in application code.
 - Instead:
   - each write happens in a database transaction
+  - duplicate item merges use one atomic insert-or-update statement (UPSERT) against a DB-enforced active dedupe key
   - latest committed state is the source of truth
   - if two users edit at nearly the same time, the final committed action wins
   - the UI refreshes after each write and also periodically while the page is open

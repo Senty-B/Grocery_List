@@ -1,0 +1,1 @@
+"""Grocery blueprint package."""
