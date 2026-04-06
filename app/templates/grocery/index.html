@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Grocery List{% endblock %}
+
+{% block content %}
+<h1>Grocery List</h1>
+
+{% if favorites %}
+  <section>
+    <h2>Favorites</h2>
+    <ul>
+      {% for favorite in favorites %}
+        <li>
+          {{ favorite.name }}
+          {% if favorite.default_quantity_value %}
+            ({{ favorite.default_quantity_value }}{% if favorite.default_unit %} {{ favorite.default_unit }}{% endif %})
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </section>
+{% endif %}
+
+<section>
+  <h2>Add Item</h2>
+  <form
+    method="POST"
+    action="{{ url_for('grocery.add_item') }}"
+    hx-post="{{ url_for('grocery.add_item') }}"
+    hx-target="#grocery-list"
+    hx-swap="innerHTML"
+  >
+    {{ form.hidden_tag() }}
+    <div>
+      {{ form.name.label }}
+      {{ form.name(
+        autocomplete="off",
+        hx_get=url_for('grocery.search'),
+        hx_trigger="keyup changed delay:300ms, search",
+        hx_target="#search-results",
+        hx_swap="innerHTML"
+      ) }}
+      {% for error in form.name.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <div id="search-results"></div>
+    <div>
+      {{ form.quantity.label }}
+      {{ form.quantity(step="0.01") }}
+      {% for error in form.quantity.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <div>
+      {{ form.unit.label }}
+      {{ form.unit() }}
+      {% for error in form.unit.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <div>
+      {{ form.note.label }}
+      {{ form.note() }}
+      {% for error in form.note.errors %}
+        <p class="error">{{ error }}</p>
+      {% endfor %}
+    </div>
+    <button type="submit">{{ form.submit.label.text }}</button>
+  </form>
+</section>
+
+<div id="grocery-list">
+  {% include "grocery/_list.html" %}
+</div>
+{% endblock %}

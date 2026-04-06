@@ -7,7 +7,7 @@ from app.auth.services import join_household
 household_bp = Blueprint("household", __name__)
 
 
-@household_bp.route("")
+@household_bp.route("/")
 def index():
     return "Household page placeholder"
 

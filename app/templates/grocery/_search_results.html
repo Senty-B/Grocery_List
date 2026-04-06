@@ -1,0 +1,12 @@
+{% if results.favorites or results.history %}
+  <ul>
+    {% for favorite in results.favorites %}
+      <li>Favorite: {{ favorite.name }}</li>
+    {% endfor %}
+    {% for history_item in results.history %}
+      <li>Recent: {{ history_item }}</li>
+    {% endfor %}
+  </ul>
+{% elif query %}
+  <p>No suggestions found.</p>
+{% endif %}

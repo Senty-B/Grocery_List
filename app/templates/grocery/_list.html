@@ -1,0 +1,14 @@
+<section>
+  <h2>Active Items</h2>
+  <div id="active-items-container">
+    {% if active_items %}
+      {% for item in active_items %}
+        {% include "grocery/_item_row.html" %}
+      {% endfor %}
+    {% else %}
+      <p>No active items.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% include "grocery/_checked_list.html" %}

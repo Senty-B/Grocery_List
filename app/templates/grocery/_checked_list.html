@@ -1,0 +1,22 @@
+<section id="checked-items-container">
+  <h2>Checked Items</h2>
+  {% if checked_items %}
+    <div>
+      {% for item in checked_items %}
+        {% include "grocery/_item_row.html" %}
+      {% endfor %}
+    </div>
+    <form
+      method="POST"
+      action="{{ url_for('grocery.confirm') }}"
+      hx-post="{{ url_for('grocery.confirm') }}"
+      hx-target="#checked-items-container"
+      hx-swap="innerHTML"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit">Confirm Purchase</button>
+    </form>
+  {% else %}
+    <p>No checked items.</p>
+  {% endif %}
+</section>

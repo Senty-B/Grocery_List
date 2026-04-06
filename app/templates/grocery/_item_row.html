@@ -1,0 +1,22 @@
+<article id="grocery-item-{{ item.id }}">
+  <form
+    method="POST"
+    action="{{ url_for('grocery.toggle', item_id=item.id) }}"
+    hx-post="{{ url_for('grocery.toggle', item_id=item.id) }}"
+    hx-target="#grocery-list"
+    hx-swap="innerHTML"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">
+      {% if item.status == "checked" %}Uncheck{% else %}Check{% endif %}
+    </button>
+    <strong>{{ item.name }}</strong>
+    <span>{{ item.quantity_value }}</span>
+    {% if item.unit %}
+      <span>{{ item.unit }}</span>
+    {% endif %}
+    {% if item.note %}
+      <span>({{ item.note }})</span>
+    {% endif %}
+  </form>
+</article>
