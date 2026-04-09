@@ -4,6 +4,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.common.authz import require_household
+from app.common.exceptions import NotFoundError
 from app.grocery.forms import AddItemForm
 from app.grocery.services import (
     add_grocery_item,
@@ -31,7 +32,7 @@ def _render_grocery_list():
     )
 
 
-@grocery_bp.route("")
+@grocery_bp.route("/")
 @login_required
 @require_household
 def index():
@@ -91,6 +92,8 @@ def toggle(item_id):
         if _is_htmx():
             return _render_grocery_list()
     except ValueError as error:
+        if str(error) == "Item not found.":
+            raise NotFoundError(str(error))
         flash(str(error), "error")
 
     return redirect(url_for("grocery.index"))

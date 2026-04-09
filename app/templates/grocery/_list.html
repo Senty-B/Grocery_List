@@ -1,14 +1,24 @@
-<section>
-  <h2>Active Items</h2>
-  <div id="active-items-container">
-    {% if active_items %}
-      {% for item in active_items %}
-        {% include "grocery/_item_row.html" %}
-      {% endfor %}
-    {% else %}
-      <p>No active items.</p>
-    {% endif %}
-  </div>
-</section>
+{% from "_macros.html" import render_badge %}
 
-{% include "grocery/_checked_list.html" %}
+<section class="space-y-4">
+  <section class="rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <h2 class="font-display text-xl leading-none text-ink-900">Ausstehend</h2>
+      {{ render_badge(active_items|length ~ " items", "warm") }}
+    </div>
+
+    <div id="active-items-container" class="space-y-2">
+      {% if active_items %}
+        {% for item in active_items %}
+          {% include "grocery/_item_row.html" %}
+        {% endfor %}
+      {% else %}
+        <div class="rounded-[0.75rem] border border-dashed border-cream-300 bg-cream-50/70 p-4 text-center">
+          <p class="text-sm text-ink-500">Alles erledigt!</p>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {% include "grocery/_checked_list.html" %}
+</section>

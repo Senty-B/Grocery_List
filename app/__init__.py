@@ -1,7 +1,7 @@
 import logging
 import os
 
-from flask import Flask
+from flask import Flask, redirect, url_for
 
 from app.config import config_map
 from app.extensions import csrf, db, login_manager, migrate
@@ -20,6 +20,7 @@ def create_app(config_name="development"):
     migrate.init_app(app, db)
 
     _register_blueprints(app)
+    _register_root_route(app)
     _register_error_handlers(app)
 
     log_level = app.config.get("LOG_LEVEL", os.environ.get("LOG_LEVEL", "INFO"))
@@ -41,6 +42,12 @@ def _register_blueprints(app):
     app.register_blueprint(household_bp, url_prefix="/household")
     app.register_blueprint(grocery_bp, url_prefix="/grocery")
     app.register_blueprint(favorites_bp, url_prefix="/favorites")
+
+
+def _register_root_route(app):
+    @app.route("/")
+    def root():
+        return redirect(url_for("grocery.index"))
 
 
 def _register_error_handlers(app):

@@ -1,0 +1,96 @@
+{% from "_macros.html" import render_badge %}
+
+<section class="rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+  <div class="flex items-center justify-between gap-4 mb-4">
+    <h2 class="font-display text-xl leading-none text-ink-900">Saved favorites</h2>
+    {{ render_badge(favorites|length ~ " saved", "warm") }}
+  </div>
+
+  {% if favorites %}
+    <div class="space-y-3">
+      {% for favorite in favorites %}
+        <article id="favorite-{{ favorite.id }}" class="rounded-[0.75rem] border border-cream-200 bg-white p-3 shadow-sm">
+          <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-start gap-3">
+                <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.5rem] bg-clay-50 text-xs font-semibold text-clay-700">
+                  {{ favorite.sort_order }}
+                </span>
+
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="break-words text-base font-semibold text-ink-900">{{ favorite.name }}</h3>
+                  </div>
+                  <p class="mt-1 break-words text-xs text-ink-500">
+                    Default: {{ favorite.default_quantity_value }}{% if favorite.default_unit %} {{ favorite.default_unit }}{% endif %}
+                    {% if favorite.default_note %} - {{ favorite.default_note }}{% endif %}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 xl:justify-end">
+              {% if favorite.sort_order > 1 %}
+                <form
+                  method="POST"
+                  action="{{ url_for('favorites.reorder', favorite_id=favorite.id) }}"
+                  hx-post="{{ url_for('favorites.reorder', favorite_id=favorite.id) }}"
+                  hx-target="#favorites-list"
+                  hx-swap="innerHTML"
+                >
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="position" value="{{ favorite.sort_order - 1 }}">
+                  <button
+                    type="submit"
+                    class="inline-flex min-h-[2.25rem] items-center justify-center rounded-[0.5rem] border border-cream-200 bg-white px-3 text-xs font-semibold text-ink-700 transition hover:border-cream-300 hover:bg-cream-50 focus:outline-none focus:ring-2 focus:ring-cream-100"
+                  >
+                    &uarr; Up
+                  </button>
+                </form>
+              {% endif %}
+
+              {% if favorite.sort_order < favorites|length %}
+                <form
+                  method="POST"
+                  action="{{ url_for('favorites.reorder', favorite_id=favorite.id) }}"
+                  hx-post="{{ url_for('favorites.reorder', favorite_id=favorite.id) }}"
+                  hx-target="#favorites-list"
+                  hx-swap="innerHTML"
+                >
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="position" value="{{ favorite.sort_order + 1 }}">
+                  <button
+                    type="submit"
+                    class="inline-flex min-h-[2.25rem] items-center justify-center rounded-[0.5rem] border border-cream-200 bg-white px-3 text-xs font-semibold text-ink-700 transition hover:border-cream-300 hover:bg-cream-50 focus:outline-none focus:ring-2 focus:ring-cream-100"
+                  >
+                    &darr; Down
+                  </button>
+                </form>
+              {% endif %}
+
+              <form
+                method="POST"
+                action="{{ url_for('favorites.delete', favorite_id=favorite.id) }}"
+                hx-post="{{ url_for('favorites.delete', favorite_id=favorite.id) }}"
+                hx-target="#favorites-list"
+                hx-swap="innerHTML"
+              >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button
+                  type="submit"
+                  class="inline-flex min-h-[2.25rem] items-center justify-center rounded-[0.5rem] border border-rose-200 bg-rose-50 px-3 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-100"
+                >
+                  Remove
+                </button>
+              </form>
+            </div>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="rounded-[0.75rem] border border-dashed border-cream-300 bg-cream-50/70 p-4 text-center">
+      <p class="text-sm font-semibold text-ink-900">No favorites saved yet.</p>
+    </div>
+  {% endif %}
+</section>

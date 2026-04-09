@@ -1,76 +1,134 @@
 {% extends "base.html" %}
+{% from "_macros.html" import render_badge, render_button, render_field %}
 
 {% block title %}Grocery List{% endblock %}
 
 {% block content %}
-<h1>Grocery List</h1>
+<section class="grid gap-4 xl:grid-cols-[1fr_2fr]">
+  <section class="order-2 rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5 xl:order-1">
+    <h1 class="font-display text-xl leading-none text-ink-900 mb-4">Hinzufügen</h1>
+    <form
+      method="POST"
+      action="{{ url_for('grocery.add_item') }}"
+      hx-post="{{ url_for('grocery.add_item') }}"
+      hx-target="#grocery-list"
+      hx-swap="innerHTML"
+      data-grocery-form
+      class="space-y-3"
+    >
+      {{ form.hidden_tag() }}
 
-{% if favorites %}
-  <section>
-    <h2>Favorites</h2>
-    <ul>
-      {% for favorite in favorites %}
-        <li>
-          {{ favorite.name }}
-          {% if favorite.default_quantity_value %}
-            ({{ favorite.default_quantity_value }}{% if favorite.default_unit %} {{ favorite.default_unit }}{% endif %})
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
-  </section>
-{% endif %}
-
-<section>
-  <h2>Add Item</h2>
-  <form
-    method="POST"
-    action="{{ url_for('grocery.add_item') }}"
-    hx-post="{{ url_for('grocery.add_item') }}"
-    hx-target="#grocery-list"
-    hx-swap="innerHTML"
-  >
-    {{ form.hidden_tag() }}
-    <div>
-      {{ form.name.label }}
-      {{ form.name(
+      {{ render_field(
+        form.name,
+        input_class="text-base",
         autocomplete="off",
         hx_get=url_for('grocery.search'),
-        hx_trigger="keyup changed delay:300ms, search",
+        hx_trigger="keyup changed delay:250ms, search",
         hx_target="#search-results",
         hx_swap="innerHTML"
       ) }}
-      {% for error in form.name.errors %}
-        <p class="error">{{ error }}</p>
-      {% endfor %}
+
+      <div id="search-results"></div>
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        {{ render_field(form.quantity, step="0.01", inputmode="decimal") }}
+        {{ render_field(form.unit) }}
+        {{ render_field(form.note) }}
+      </div>
+
+      <div class="pt-2">
+        {{ render_button(form.submit.label.text, full_width=True) }}
+      </div>
+    </form>
+  </section>
+
+  <aside class="order-1 rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5 xl:order-2">
+    <div class="flex items-center justify-between gap-4 mb-4">
+      <h2 class="font-display text-xl leading-none text-ink-900">
+        Favoriten
+      </h2>
+      <a
+        href="{{ url_for('favorites.index') }}"
+        class="inline-flex min-h-[2.25rem] shrink-0 items-center justify-center rounded-[0.75rem] border border-cream-200 bg-cream-50 px-3 text-xs font-semibold text-ink-700 transition hover:border-cream-300 hover:bg-white"
+      >Verwalten</a>
     </div>
-    <div id="search-results"></div>
-    <div>
-      {{ form.quantity.label }}
-      {{ form.quantity(step="0.01") }}
-      {% for error in form.quantity.errors %}
-        <p class="error">{{ error }}</p>
-      {% endfor %}
-    </div>
-    <div>
-      {{ form.unit.label }}
-      {{ form.unit() }}
-      {% for error in form.unit.errors %}
-        <p class="error">{{ error }}</p>
-      {% endfor %}
-    </div>
-    <div>
-      {{ form.note.label }}
-      {{ form.note() }}
-      {% for error in form.note.errors %}
-        <p class="error">{{ error }}</p>
-      {% endfor %}
-    </div>
-    <button type="submit">{{ form.submit.label.text }}</button>
-  </form>
+
+    <div id="quick-add-feedback"></div>
+
+    {% if favorites %}
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+        {% for favorite in favorites %}
+          <form
+            method="POST"
+            action="{{ url_for('favorites.quick_add', favorite_id=favorite.id) }}"
+            hx-post="{{ url_for('favorites.quick_add', favorite_id=favorite.id) }}"
+            hx-target="#quick-add-feedback"
+            hx-swap="outerHTML"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="quantity_override" value="{{ favorite.default_quantity_value }}">
+            <button
+              type="submit"
+              class="flex h-full w-full flex-col items-center justify-center rounded-[0.75rem] border border-moss-200 bg-moss-50 p-2 text-center transition hover:border-moss-300 hover:bg-moss-100 focus:outline-none focus:ring-2 focus:ring-moss-100"
+            >
+              <span class="text-sm font-semibold text-ink-900">{{ favorite.name }}</span>
+              <span class="text-xs text-ink-400 mt-1">{{ favorite.default_quantity_value }}{% if favorite.default_unit %} {{ favorite.default_unit }}{% endif %}</span>
+            </button>
+          </form>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="rounded-[0.75rem] border border-dashed border-cream-300 bg-cream-50/70 p-3 text-center">
+        <p class="text-sm text-ink-500">Keine Favoriten angelegt.</p>
+      </div>
+    {% endif %}
+  </aside>
 </section>
 
-<div id="grocery-list">
+<div id="grocery-list" class="mt-6">
   {% include "grocery/_list.html" %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.body.addEventListener("click", function(event) {
+      const trigger = event.target.closest("[data-fill-name]");
+      if (!trigger) {
+        return;
+      }
+
+      const form = document.querySelector("[data-grocery-form]");
+      if (!form) {
+        return;
+      }
+
+      const nameInput = form.querySelector('[name="name"]');
+      const quantityInput = form.querySelector('[name="quantity"]');
+      const unitInput = form.querySelector('[name="unit"]');
+      const noteInput = form.querySelector('[name="note"]');
+      const searchResults = document.querySelector("#search-results");
+
+      if (nameInput) {
+        nameInput.value = trigger.dataset.fillName || "";
+      }
+      if (quantityInput && trigger.dataset.fillQuantity) {
+        quantityInput.value = trigger.dataset.fillQuantity;
+      }
+      if (unitInput && Object.prototype.hasOwnProperty.call(trigger.dataset, "fillUnit")) {
+        unitInput.value = trigger.dataset.fillUnit || "";
+      }
+      if (noteInput && Object.prototype.hasOwnProperty.call(trigger.dataset, "fillNote")) {
+        noteInput.value = trigger.dataset.fillNote || "";
+      }
+      if (searchResults) {
+        searchResults.innerHTML = "";
+      }
+      if (quantityInput) {
+        quantityInput.focus();
+        quantityInput.select();
+      }
+    });
+  </script>
 {% endblock %}

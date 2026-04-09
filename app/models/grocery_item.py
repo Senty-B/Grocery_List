@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from sqlalchemy import text
+
 from app.extensions import db
 
 
@@ -46,6 +48,12 @@ class GroceryItem(db.Model):
     __table_args__ = (
         db.Index("ix_grocery_household_status", "household_id", "status"),
         db.Index("ix_grocery_household_normalized", "household_id", "normalized_name"),
+        db.Index(
+            "uq_grocery_active_dedupe",
+            "household_id", "normalized_name", "normalized_unit", "normalized_note",
+            unique=True,
+            postgresql_where=text("status = 'active'"),
+        ),
     )
 
     household = db.relationship("Household", back_populates="grocery_items")

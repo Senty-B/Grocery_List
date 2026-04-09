@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_badge, render_button, render_field %}
+
+{% block title %}Favorites{% endblock %}
+
+{% block content %}
+<section class="grid gap-4 xl:grid-cols-[1fr_1fr]">
+  <section class="space-y-4">
+    <div class="rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <h1 class="font-display text-2xl leading-none text-ink-900">
+          Favorites
+        </h1>
+        <div class="flex flex-wrap gap-2">
+          {{ render_badge("Shared shortcuts", "moss") }}
+        </div>
+      </div>
+      <p class="text-sm text-ink-500">
+        Household staples for one-tap grocery adding.
+      </p>
+    </div>
+
+    <div id="quick-add-feedback"></div>
+
+    <div id="favorites-list">
+      {% include "favorites/_list.html" %}
+    </div>
+  </section>
+
+  <aside id="favorite-form" class="rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+    <h2 class="font-display text-xl leading-none text-ink-900 mb-4">Add a favorite</h2>
+    <form
+      method="POST"
+      action="{{ url_for('favorites.create') }}"
+      hx-post="{{ url_for('favorites.create') }}"
+      hx-target="#favorites-list"
+      hx-swap="innerHTML"
+      class="space-y-4"
+    >
+      {{ form.hidden_tag() }}
+
+      {{ render_field(form.name) }}
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        {{ render_field(form.quantity, step="0.01", inputmode="decimal") }}
+        {{ render_field(form.unit) }}
+        {{ render_field(form.note) }}
+      </div>
+
+      <div class="relative pt-2">
+        {{ render_button(form.submit.label.text) }}
+        <span class="htmx-indicator absolute -bottom-6 right-2 text-xs font-semibold uppercase tracking-[0.16em] text-clay-600">
+          Saving
+        </span>
+      </div>
+    </form>
+  </aside>
+</section>
+{% endblock %}
