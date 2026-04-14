@@ -1,54 +1,62 @@
 {% set is_checked = item.status == "checked" %}
 
-<article
-  id="grocery-item-{{ item.id }}"
-  class="overflow-hidden rounded-[0.75rem] border shadow-sm
+<form
+  method="POST"
+  action="{{ url_for('grocery.toggle', item_id=item.id) }}"
+  hx-post="{{ url_for('grocery.toggle', item_id=item.id) }}"
+  hx-target="#grocery-list"
+  hx-swap="innerHTML"
+  class="item-row overflow-hidden rounded-[0.75rem] border shadow-sm
     {% if is_checked %}
       border-moss-200 bg-moss-50/70
     {% else %}
       border-cream-200 bg-white
     {% endif %}"
 >
-  <form
-    method="POST"
-    action="{{ url_for('grocery.toggle', item_id=item.id) }}"
-    hx-post="{{ url_for('grocery.toggle', item_id=item.id) }}"
-    hx-target="#grocery-list"
-    hx-swap="innerHTML"
-    class="flex items-center gap-3 p-3"
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+  <button
+    id="grocery-item-{{ item.id }}"
+    type="submit"
+    aria-label="{% if is_checked %}Move {{ item.name }} back to the active list{% else %}Mark {{ item.name }} as checked{% endif %}"
+    class="flex min-h-[3.5rem] w-full items-center justify-between gap-3 p-4 text-left transition focus:outline-none focus:ring-2
+      {% if is_checked %}
+        hover:bg-moss-100/60 focus:ring-moss-100
+      {% else %}
+        hover:bg-cream-50 focus:ring-clay-100
+      {% endif %}"
   >
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <button
-      type="submit"
-      aria-label="{% if is_checked %}Move {{ item.name }} back to the active list{% else %}Mark {{ item.name }} as checked{% endif %}"
-      class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.5rem] border transition focus:outline-none focus:ring-2
+    <div class="flex min-w-0 items-center gap-3">
+      <span
+        aria-hidden="true"
+        class="toggle-check inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2
+          {% if is_checked %}
+            border-moss-500 bg-moss-500 text-white
+          {% else %}
+            border-cream-300 bg-white text-transparent
+          {% endif %}"
+      >
         {% if is_checked %}
-          border-moss-200 bg-white text-moss-700 hover:bg-moss-50 hover:border-moss-300 focus:ring-moss-100
-        {% else %}
-          border-clay-200 bg-clay-50 text-clay-700 hover:bg-clay-100 hover:border-clay-300 focus:ring-clay-100
-        {% endif %}"
-    >
-      <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12l4 4L19 6"></path>
-      </svg>
-      <span class="sr-only">{% if is_checked %}Move back to active{% else %}Mark checked{% endif %}</span>
-    </button>
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+          </svg>
+        {% endif %}
+      </span>
 
-    <div class="min-w-0 flex-1">
-      <div class="flex flex-wrap items-center gap-2">
-        <h3 class="break-words text-base font-semibold {% if is_checked %}text-ink-700 line-through decoration-2{% else %}text-ink-900{% endif %}">
+      <div class="min-w-0">
+        <p class="truncate text-base font-semibold {% if is_checked %}text-ink-500 line-through decoration-2{% else %}text-ink-900{% endif %}">
           {{ item.name }}
-        </h3>
-        <span class="rounded-[0.5rem] bg-cream-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-ink-700">
-          {{ item.quantity_value }}{% if item.unit %} {{ item.unit }}{% endif %}
-        </span>
+        </p>
         {% if item.note %}
-          <span class="rounded-[0.5rem] bg-white/85 px-2 py-0.5 text-xs font-medium text-ink-500">
-            {{ item.note }}
-          </span>
+          <p class="mt-0.5 truncate text-sm text-ink-400">{{ item.note }}</p>
         {% endif %}
       </div>
     </div>
-  </form>
-</article>
+
+    <div class="ml-3 shrink-0 text-right">
+      <span class="text-sm font-semibold {% if is_checked %}text-ink-400{% else %}text-ink-700{% endif %}">
+        {{ item.quantity_value }}{% if item.unit %} {{ item.unit }}{% endif %}
+      </span>
+    </div>
+  </button>
+</form>

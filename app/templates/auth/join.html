@@ -1,51 +1,39 @@
 {% extends "base.html" %}
-{% from "_macros.html" import render_badge, render_button, render_field %}
+{% from "_macros.html" import render_button, render_field %}
 
 {% block title %}Join Household{% endblock %}
 
-{% block main_class %}relative mx-auto flex min-h-screen w-full max-w-4xl items-center px-4 py-8 sm:px-6 lg:px-8{% endblock %}
+{% block main_class %}relative mx-auto flex min-h-screen w-full max-w-xl items-center px-4 py-8 sm:px-6{% endblock %}
 
 {% block content %}
-<section class="grid w-full gap-4 lg:grid-cols-[1fr_1fr]">
-  <div class="rounded-[1rem] bg-clay-600 p-5 text-white shadow-sm sm:p-6 flex flex-col justify-center">
-    <div class="space-y-4">
-      <h1 class="font-display text-3xl leading-none text-white">
-        Join a household
-      </h1>
-      <p class="text-sm leading-7 text-clay-100">
-        Enter your invite code below to join an existing shared list.
-      </p>
+<section class="w-full">
+  <div class="rounded-[1rem] border border-cream-200 bg-white/90 p-5 shadow-sm backdrop-blur sm:p-6">
+    <div class="mb-6">
+      <h1 class="font-display text-[1.75rem] leading-none text-ink-900">Join household</h1>
     </div>
-  </div>
-
-  <div class="rounded-[1rem] border border-cream-200 bg-white/80 p-5 shadow-sm backdrop-blur sm:p-6">
-    <h2 class="font-display text-2xl leading-none text-ink-900 mb-4">Create account</h2>
 
     <form method="POST" action="{{ url_for('household.join') }}" class="space-y-4">
       {{ form.hidden_tag() }}
 
       <section class="space-y-3">
-        {{ render_field(form.username, autocomplete="username", help_text="3 to 50 characters.") }}
-        {{ render_field(form.password, autocomplete="new-password") }}
-        {{ render_field(form.confirm_password, autocomplete="new-password") }}
+        {{ render_field(form.username, autocomplete="username", placeholder="Username", help_text="3 to 50 characters.") }}
+        {{ render_field(form.password, autocomplete="new-password", placeholder="Password") }}
+        {{ render_field(form.confirm_password, autocomplete="new-password", placeholder="Confirm password") }}
       </section>
 
-      <section class="space-y-3 rounded-[0.75rem] border border-cream-200 bg-cream-50/70 p-3 mt-4">
-        {{ render_field(form.invite_code, autocapitalize="characters", spellcheck="false", help_text="Get this from the owner.") }}
+      <section class="mt-4 rounded-[0.9rem] border border-moss-200 bg-moss-50/70 p-4">
+        {{ render_field(form.invite_code, autocapitalize="characters", spellcheck="false", placeholder="Invite code", help_text="Ask the owner for the current code.") }}
       </section>
 
       <div class="pt-4">
-        {{ render_button(form.submit.label.text) }}
+        {{ render_button(form.submit.label.text, tone="moss") }}
       </div>
     </form>
 
-    <div class="mt-6 flex flex-col gap-2">
-      <a class="text-sm font-semibold text-clay-600 hover:text-clay-700 transition" href="{{ url_for('auth.register') }}">
-        Need your own household? Create one.
-      </a>
-      <a class="text-sm font-semibold text-ink-500 hover:text-ink-700 transition" href="{{ url_for('auth.login') }}">
-        Already registered? Log in.
-      </a>
+    <div class="mt-6 flex items-center justify-center gap-4 text-sm">
+      <a class="btn-press font-semibold text-ink-400 transition hover:text-ink-700" href="{{ url_for('auth.register') }}">Create household</a>
+      <span class="text-cream-300">|</span>
+      <a class="btn-press font-semibold text-ink-400 transition hover:text-ink-700" href="{{ url_for('auth.login') }}">Sign in</a>
     </div>
   </div>
 </section>

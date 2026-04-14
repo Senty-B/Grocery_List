@@ -1,37 +1,50 @@
 {% if results.favorites or results.history %}
-  <div class="rounded-[1.35rem] border border-cream-200 bg-cream-50/80 p-4 shadow-sm">
-    <p class="text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-clay-600">Suggestions</p>
-    <div class="mt-3 flex flex-wrap gap-2">
+  <div class="bg-white">
+    <ul class="max-h-64 overflow-auto py-1">
       {% for favorite in results.favorites %}
-        <button
-          type="button"
-          data-fill-name="{{ favorite.name|e }}"
-          data-fill-quantity="{{ favorite.default_quantity_value }}"
-          data-fill-unit="{{ (favorite.default_unit or '')|e }}"
-          data-fill-note="{{ (favorite.default_note or '')|e }}"
-          class="inline-flex min-h-[2.75rem] items-center rounded-full border border-moss-200 bg-moss-50 px-4 py-2 text-left text-sm font-medium text-moss-700 transition hover:border-moss-300 hover:bg-moss-100 focus:outline-none focus:ring-2 focus:ring-moss-100"
-        >
-          <span class="whitespace-nowrap text-moss-700 font-semibold">Favorite</span>
-          <span class="mx-2 text-moss-400">-</span>
-          <span class="break-words">{{ favorite.name }}</span>
-        </button>
+        <li>
+          <button
+            type="button"
+            data-fill-name="{{ favorite.name|e }}"
+            data-fill-quantity="{{ favorite.default_quantity_value }}"
+            data-fill-unit="{{ (favorite.default_unit or '')|e }}"
+            data-fill-note="{{ (favorite.default_note or '')|e }}"
+            class="flex min-h-[3rem] w-full items-center gap-3 px-4 py-3 text-left text-sm text-ink-700 transition hover:bg-moss-50 focus:outline-none focus:bg-moss-50"
+          >
+            <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-moss-100 text-xs font-bold text-moss-700">
+              F
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate font-semibold text-ink-900">{{ favorite.name }}</span>
+              <span class="block truncate text-xs text-ink-400">
+                Favorite{% if favorite.default_unit %} - {{ favorite.default_unit }}{% endif %}
+              </span>
+            </span>
+          </button>
+        </li>
       {% endfor %}
 
       {% for history_item in results.history %}
-        <button
-          type="button"
-          data-fill-name="{{ history_item|e }}"
-          class="inline-flex min-h-[2.75rem] items-center rounded-full border border-clay-200 bg-clay-50 px-4 py-2 text-left text-sm font-medium text-clay-700 transition hover:border-clay-300 hover:bg-clay-100 focus:outline-none focus:ring-2 focus:ring-clay-100"
-        >
-          <span class="whitespace-nowrap text-clay-700 font-semibold">Recent</span>
-          <span class="mx-2 text-clay-400">-</span>
-          <span class="break-words">{{ history_item }}</span>
-        </button>
+        <li>
+          <button
+            type="button"
+            data-fill-name="{{ history_item|e }}"
+            class="flex min-h-[3rem] w-full items-center gap-3 px-4 py-3 text-left text-sm text-ink-700 transition hover:bg-cream-50 focus:outline-none focus:bg-cream-50"
+          >
+            <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cream-100 text-xs font-bold text-clay-700">
+              R
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate font-semibold text-ink-900">{{ history_item }}</span>
+              <span class="block truncate text-xs text-ink-400">Recent item</span>
+            </span>
+          </button>
+        </li>
       {% endfor %}
-    </div>
+    </ul>
   </div>
 {% elif query %}
-  <div class="rounded-[1.25rem] border border-dashed border-cream-300 bg-cream-50/70 p-4 text-sm text-ink-400">
+  <div class="p-4 text-sm text-ink-400">
     No saved matches for "{{ query }}". You can still add it as a new item.
   </div>
 {% endif %}

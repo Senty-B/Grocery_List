@@ -1,44 +1,38 @@
-{% from "_macros.html" import render_badge %}
-
-<section id="checked-items-container" class="rounded-[1rem] border border-moss-200 bg-moss-50/65 p-4 shadow-sm backdrop-blur sm:p-5 bg-white/80">
-  <div class="flex items-center justify-between gap-4 mb-4">
-    <h2 class="font-display text-xl leading-none text-ink-900">
-      Erledigt
-    </h2>
-    {{ render_badge(checked_items|length ~ " items", "moss") }}
+{% if checked_items %}
+<section id="checked-items-container" class="rounded-[1rem] border border-moss-200 bg-moss-50/60 p-4 shadow-sm backdrop-blur sm:p-5">
+  <div class="mb-3 flex items-center justify-between gap-4">
+    <h2 class="text-sm font-semibold uppercase tracking-[0.15em] text-moss-600">Checked</h2>
+    <span class="text-xs font-semibold text-ink-400">{{ checked_items|length }}</span>
   </div>
 
-  {% if checked_items %}
-    <div class="space-y-2 mb-4">
-      {% for item in checked_items %}
-        {% include "grocery/_item_row.html" %}
-      {% endfor %}
-    </div>
+  <div class="mb-4 space-y-2">
+    {% for item in checked_items %}
+      {% include "grocery/_item_row.html" %}
+    {% endfor %}
+  </div>
 
-    <form
-      method="POST"
-      action="{{ url_for('grocery.confirm') }}"
-      hx-post="{{ url_for('grocery.confirm') }}"
-      hx-target="#checked-items-container"
-      hx-swap="outerHTML"
-      class="pt-2"
-    >
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="relative">
-        <button
-          type="submit"
-          class="inline-flex w-full min-h-[2.75rem] items-center justify-center rounded-[0.75rem] border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-100"
-        >
-        Kauf bestätigen
-        </button>
-        <span class="htmx-indicator absolute -bottom-6 right-1 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700">
-          Clearing
-        </span>
-      </div>
-    </form>
-  {% else %}
-    <div class="rounded-[0.75rem] border border-dashed border-moss-200 bg-white/70 p-4 text-center">
-      <p class="text-sm text-ink-500">Noch nichts gekauft.</p>
+  <form
+    method="POST"
+    action="{{ url_for('grocery.confirm') }}"
+    hx-post="{{ url_for('grocery.confirm') }}"
+    hx-target="#checked-items-container"
+    hx-swap="outerHTML"
+    hx-confirm="Remove all checked items?"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="relative">
+      <button
+        type="submit"
+        class="btn-press inline-flex w-full min-h-[2.75rem] items-center justify-center rounded-[0.75rem] border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 transition hover:border-rose-300 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-rose-100"
+      >
+        Confirm Purchase ({{ checked_items|length }})
+      </button>
+      <span class="htmx-indicator absolute -bottom-6 right-1 text-xs font-semibold uppercase tracking-[0.16em] text-rose-700">
+        Clearing
+      </span>
     </div>
-  {% endif %}
+  </form>
 </section>
+{% else %}
+<section id="checked-items-container"></section>
+{% endif %}

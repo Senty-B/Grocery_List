@@ -7,37 +7,33 @@
 
 {% block content %}
 <section class="w-full">
-  <div class="rounded-[1rem] border border-cream-200 bg-white/80 p-5 shadow-sm backdrop-blur sm:p-6">
-    <div class="space-y-2 mb-6">
-      <h1 class="font-display text-3xl leading-none text-ink-900">Create household</h1>
-      <p class="text-sm text-ink-500">Set up a new shared grocery list.</p>
+  <div class="rounded-[1rem] border border-cream-200 bg-white/90 p-5 shadow-sm backdrop-blur sm:p-6">
+    <div class="mb-6">
+      <h1 class="font-display text-[1.75rem] leading-none text-ink-900">Create household</h1>
     </div>
 
     <form method="POST" class="space-y-4">
       {{ form.hidden_tag() }}
 
       <section class="space-y-3">
-        {{ render_field(form.username, autocomplete="username", help_text="3 to 50 characters.") }}
-        {{ render_field(form.password, autocomplete="new-password") }}
-        {{ render_field(form.confirm_password, autocomplete="new-password") }}
+        {{ render_field(form.username, autocomplete="username", placeholder="Username", help_text="3 to 50 characters.") }}
+        {{ render_field(form.password, autocomplete="new-password", placeholder="Password") }}
+        {{ render_field(form.confirm_password, autocomplete="new-password", placeholder="Confirm password") }}
       </section>
 
       <section class="space-y-3 mt-4">
-        {{ render_field(form.household_name, autocomplete="organization") }}
+        {{ render_field(form.household_name, autocomplete="organization", placeholder="Household name") }}
       </section>
 
       <div class="pt-4">
-        {{ render_button(form.submit.label.text) }}
+        {{ render_button(form.submit.label.text, tone="honey") }}
       </div>
     </form>
 
-    <div class="mt-6 flex flex-col gap-3">
-      <a class="text-sm font-semibold text-ink-500 hover:text-ink-700 transition" href="{{ url_for('auth.login') }}">
-        Already have an account? Log in.
-      </a>
-      <a class="text-sm font-semibold text-clay-600 hover:text-clay-700 transition" href="{{ url_for('auth.register_join') }}">
-        Joining an existing household? Use an invite code.
-      </a>
+    <div class="mt-6 flex items-center justify-center gap-4 text-sm">
+      <a class="btn-press font-semibold text-ink-400 transition hover:text-ink-700" href="{{ url_for('auth.login') }}">Sign in</a>
+      <span class="text-cream-300">|</span>
+      <a class="btn-press font-semibold text-ink-400 transition hover:text-ink-700" href="{{ url_for('auth.register_join') }}">Join with code</a>
     </div>
   </div>
 </section>

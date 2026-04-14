@@ -1,8 +1,10 @@
-{% macro render_field(field, help_text=None, wrapper_class="", input_class="", label_class="") %}
+{% macro render_field(field, help_text=None, wrapper_class="", input_class="", label_class="", hide_label=False) %}
 <div class="{{ wrapper_class or 'space-y-1.5' }}">
-  <label for="{{ field.id }}" class="{{ label_class or 'block text-sm font-semibold text-ink-700' }}">
-    {{ field.label.text }}
-  </label>
+  {% if not hide_label %}
+    <label for="{{ field.id }}" class="{{ label_class or 'block text-sm font-semibold text-ink-700' }}">
+      {{ field.label.text }}
+    </label>
+  {% endif %}
   {{ field(class="block min-h-[2.75rem] w-full rounded-[0.75rem] border border-cream-200 bg-white px-3 py-2 text-base text-ink-900 shadow-sm outline-none transition placeholder:text-ink-300 focus:border-clay-500 focus:ring-2 focus:ring-clay-100 " ~ input_class, **kwargs) }}
   {% if help_text %}
     <p class="text-xs leading-5 text-ink-400">{{ help_text }}</p>
@@ -16,7 +18,7 @@
 {% macro render_button(text, tone="primary", full_width=True, button_type="submit", extra_class="") %}
 <button
   type="{{ button_type }}"
-  class="{% if full_width %}w-full {% endif %}inline-flex min-h-[2.75rem] items-center justify-center rounded-[0.75rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 {% if tone == 'secondary' %}border border-cream-200 bg-white text-ink-700 hover:border-cream-300 hover:bg-cream-50 focus:ring-cream-100{% elif tone == 'danger' %}border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100{% elif tone == 'moss' %}border border-moss-200 bg-moss-50 text-moss-700 hover:bg-moss-100 focus:ring-moss-100{% else %}border border-clay-200 bg-clay-50 text-clay-700 hover:bg-clay-100 focus:ring-clay-100{% endif %} {{ extra_class }}"
+  class="btn-press {% if full_width %}w-full {% endif %}inline-flex min-h-[2.75rem] items-center justify-center rounded-[0.75rem] px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 {% if tone == 'secondary' %}border border-cream-200 bg-white text-ink-700 hover:border-cream-300 hover:bg-cream-50 focus:ring-cream-100{% elif tone == 'danger' %}border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus:ring-rose-100{% elif tone == 'moss' %}border border-moss-200 bg-moss-50 text-moss-700 hover:bg-moss-100 focus:ring-moss-100{% elif tone == 'honey' %}border border-honey-200 bg-honey-50 text-honey-700 hover:bg-honey-100 focus:ring-honey-100{% else %}border border-clay-200 bg-clay-50 text-clay-700 hover:bg-clay-100 focus:ring-clay-100{% endif %} {{ extra_class }}"
 >
   {{ text }}
 </button>
@@ -26,6 +28,8 @@
 <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider
   {% if tone == 'warm' %}
     bg-clay-50 text-clay-700
+  {% elif tone == 'honey' %}
+    bg-honey-50 text-honey-700
   {% elif tone == 'moss' %}
     bg-moss-50 text-moss-700
   {% elif tone == 'danger' %}

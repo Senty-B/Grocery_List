@@ -3,15 +3,13 @@
   {% if success %}
     role="status"
     aria-live="polite"
-    class="rounded-[1.4rem] border border-moss-200 bg-moss-50 px-4 py-4 text-moss-700 shadow-soft"
   {% else %}
     role="alert"
     aria-live="assertive"
-    class="rounded-[1.4rem] border border-rose-200 bg-rose-50 px-4 py-4 text-rose-700 shadow-soft"
   {% endif %}
 >
-  <div class="flex items-start gap-3">
-    <span class="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full
+  <!--<div class="flex items-center gap-3">
+    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full
       {% if success %}
         bg-moss-100 text-moss-700
       {% else %}
@@ -20,15 +18,8 @@
       {% if success %}OK{% else %}!{% endif %}
     </span>
 
-    <div class="min-w-0">
-      <p class="text-sm font-semibold leading-6">{{ message }}</p>
-      {% if success %}
-        <p class="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-moss-600">
-          Grocery list refreshed
-        </p>
-      {% endif %}
-    </div>
-  </div>
+    <p class="min-w-0 text-sm font-semibold leading-6">{% if success %}Added to list.{% else %}{{ message }}{% endif %}</p>
+  </div> -->
 </div>
 
 {% if success and active_items is defined and checked_items is defined %}
