@@ -38,7 +38,41 @@
         {{ render_field(form.name, placeholder="Item name") }}
 
         <div class="grid gap-3 sm:grid-cols-3">
-          {{ render_field(form.quantity, step="0.01", inputmode="decimal", placeholder="1") }}
+          <div class="space-y-1.5">
+            <label for="{{ form.quantity.id }}" class="block text-sm font-semibold text-ink-700">
+              {{ form.quantity.label.text }}
+            </label>
+            <div class="relative">
+              {{ form.quantity(
+                step="1",
+                min="1",
+                inputmode="numeric",
+                placeholder="1",
+                class="block min-h-[2.75rem] w-full rounded-[0.75rem] border border-cream-200 bg-white px-3 py-2 pr-16 text-base text-ink-900 shadow-sm outline-none transition placeholder:text-ink-300 focus:border-clay-500 focus:ring-2 focus:ring-clay-100 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0"
+              ) }}
+              <div class="absolute inset-y-0 right-2 flex items-center gap-1">
+                <button
+                  type="button"
+                  data-favorite-qty-step="-1"
+                  aria-label="Decrease default quantity"
+                  class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-cream-200 bg-cream-50 text-sm font-semibold text-ink-700 transition hover:bg-cream-100 focus:outline-none focus:ring-2 focus:ring-clay-100"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  data-favorite-qty-step="1"
+                  aria-label="Increase default quantity"
+                  class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-cream-200 bg-cream-50 text-sm font-semibold text-ink-700 transition hover:bg-cream-100 focus:outline-none focus:ring-2 focus:ring-clay-100"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+            {% for error in form.quantity.errors %}
+              <p class="text-sm text-rose-700">{{ error }}</p>
+            {% endfor %}
+          </div>
           {{ render_field(form.unit, placeholder="Unit") }}
           {{ render_field(form.note, placeholder="Note") }}
         </div>
@@ -53,4 +87,32 @@
     </aside>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    document.body.addEventListener("click", function(event) {
+      const stepButton = event.target.closest("[data-favorite-qty-step]");
+      if (!stepButton) {
+        return;
+      }
+
+      const form = stepButton.closest("form");
+      const quantityInput = form ? form.querySelector('[name="quantity"]') : null;
+      if (!quantityInput) {
+        return;
+      }
+
+      const delta = Number(stepButton.dataset.favoriteQtyStep || "0");
+      const min = quantityInput.min ? Number(quantityInput.min) : 1;
+      const max = quantityInput.max ? Number(quantityInput.max) : Number.POSITIVE_INFINITY;
+      const currentValue = Number(quantityInput.value);
+      const safeCurrentValue = Number.isFinite(currentValue) ? currentValue : min;
+      const nextValue = Math.min(max, Math.max(min, safeCurrentValue + delta));
+
+      quantityInput.value = String(nextValue);
+      quantityInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  </script>
 {% endblock %}
