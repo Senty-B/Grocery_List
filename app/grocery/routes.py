@@ -120,7 +120,7 @@ def confirm():
 @login_required
 @require_household
 def search():
-    query = request.args.get("q", "")
+    query = request.args.get("q") or request.args.get("name") or ""
     results = search_items(current_user.household_id, query)
     return render_template(
         "grocery/_search_results.html",

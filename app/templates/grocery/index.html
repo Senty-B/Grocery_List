@@ -74,10 +74,12 @@
           placeholder="Item name...",
           class="block min-h-[3rem] w-full rounded-[0.75rem] border border-cream-200 bg-white px-4 py-2.5 text-base text-ink-900 shadow-sm outline-none transition placeholder:text-ink-300 focus:border-clay-500 focus:ring-2 focus:ring-clay-100",
           autocomplete="off",
-          hx_get=url_for('grocery.search'),
-          hx_trigger="keyup changed delay:300ms, search",
-          hx_target="#search-results",
-          hx_swap="innerHTML"
+          **{
+            "hx-get": url_for('grocery.search'),
+            "hx-trigger": "keyup changed delay:300ms, search",
+            "hx-target": "#search-results",
+            "hx-swap": "innerHTML",
+          }
         ) }}
         {% for error in form.name.errors %}
           <p class="mt-1.5 text-sm text-rose-700">{{ error }}</p>
@@ -164,13 +166,32 @@
       quantityInput.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
+    function sizeSearchResultsDropdown() {
+      const list = document.querySelector("[data-search-results-list]");
+      if (!list) {
+        return;
+      }
+
+      const bottomNav = document.querySelector("nav.fixed");
+      const viewportBottom = bottomNav
+        ? bottomNav.getBoundingClientRect().top
+        : window.innerHeight;
+      const safetyMargin = 12;
+      const available = viewportBottom - list.getBoundingClientRect().top - safetyMargin;
+
+      list.style.maxHeight = Math.max(120, available) + "px";
+    }
+
     document.body.addEventListener("htmx:afterSwap", function(event) {
       if (event.detail.target.id !== "search-results") {
         return;
       }
 
       event.detail.target.classList.toggle("hidden", event.detail.target.innerHTML.trim() === "");
+      sizeSearchResultsDropdown();
     });
+
+    window.addEventListener("resize", sizeSearchResultsDropdown);
 
     document.body.addEventListener("click", function(event) {
       const trigger = event.target.closest("[data-fill-name]");

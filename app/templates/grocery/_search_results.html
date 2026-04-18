@@ -1,6 +1,6 @@
-{% if results.favorites or results.history %}
+{% if results.favorites or results.history or results.recommendations %}
   <div class="bg-white">
-    <ul class="max-h-64 overflow-auto py-1">
+    <ul data-search-results-list class="overflow-y-auto overscroll-contain py-1 [-webkit-overflow-scrolling:touch]">
       {% for favorite in results.favorites %}
         <li>
           <button
@@ -41,10 +41,24 @@
           </button>
         </li>
       {% endfor %}
+
+      {% for recommendation in results.recommendations %}
+        <li>
+          <button
+            type="button"
+            data-fill-name="{{ recommendation|e }}"
+            class="flex min-h-[3rem] w-full items-center gap-3 px-4 py-3 text-left text-sm text-ink-700 transition hover:bg-honey-50 focus:outline-none focus:bg-honey-50"
+          >
+            <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-honey-100 text-xs font-bold text-honey-700">
+              E
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate font-semibold text-ink-900">{{ recommendation }}</span>
+              <span class="block truncate text-xs text-ink-400">Empfehlung</span>
+            </span>
+          </button>
+        </li>
+      {% endfor %}
     </ul>
-  </div>
-{% elif query %}
-  <div class="p-4 text-sm text-ink-400">
-    No saved matches for "{{ query }}". You can still add it as a new item.
   </div>
 {% endif %}

@@ -13,8 +13,11 @@ from app.common.validators import (
     validate_unit,
 )
 from app.extensions import db
+from app.grocery.recommendations import VEGETARIAN_RECOMMENDATIONS
 from app.models.favorite_item import FavoriteItem
 from app.models.grocery_item import GroceryItem
+
+MAX_SUGGESTIONS_PER_GROUP = 5
 
 logger = logging.getLogger(__name__)
 
@@ -217,17 +220,18 @@ def get_grocery_list(household_id):
 
 
 def search_items(household_id, query):
-    """Search favorites and existing grocery item names for suggestions."""
+    """Search favorites, past items, and default recommendations for suggestions."""
     normalized_query = normalize_text(query)
+    empty_result = {"favorites": [], "history": [], "recommendations": []}
     if not normalized_query:
-        return {"favorites": [], "history": []}
+        return empty_result
 
-    search_term = f"%{normalized_query}%"
+    search_term = f"{normalized_query}%"
     favorites = (
         FavoriteItem.query.filter_by(household_id=household_id)
         .filter(FavoriteItem.normalized_name.ilike(search_term))
         .order_by(FavoriteItem.sort_order, FavoriteItem.name)
-        .limit(5)
+        .limit(MAX_SUGGESTIONS_PER_GROUP)
         .all()
     )
 
@@ -239,15 +243,37 @@ def search_items(household_id, query):
         .all()
     )
 
+    seen_normalized = {normalize_text(favorite.name) for favorite in favorites}
+
     history = []
-    seen = set()
     for row in matching_items:
-        key = row.normalized_name
-        if key in seen:
+        if row.normalized_name in seen_normalized:
             continue
-        seen.add(key)
+        seen_normalized.add(row.normalized_name)
         history.append(row.name)
-        if len(history) >= 5:
+        if len(history) >= MAX_SUGGESTIONS_PER_GROUP:
             break
 
-    return {"favorites": favorites, "history": history}
+    recommendations = _build_recommendations(normalized_query, seen_normalized)
+
+    return {
+        "favorites": favorites,
+        "history": history,
+        "recommendations": recommendations,
+    }
+
+
+def _build_recommendations(normalized_query, seen_normalized):
+    """Filter curated recommendations by prefix match and skip duplicates."""
+    recommendations = []
+    for item in VEGETARIAN_RECOMMENDATIONS:
+        normalized_item = normalize_text(item)
+        if not normalized_item.startswith(normalized_query):
+            continue
+        if normalized_item in seen_normalized:
+            continue
+        seen_normalized.add(normalized_item)
+        recommendations.append(item)
+        if len(recommendations) >= MAX_SUGGESTIONS_PER_GROUP:
+            break
+    return recommendations
