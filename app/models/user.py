@@ -8,6 +8,8 @@ from app.extensions import db
 class User(UserMixin, db.Model):
     __tablename__ = "users"
 
+    is_admin = False
+
     id = db.Column(db.Integer, primary_key=True)
     household_id = db.Column(
         db.Integer,
@@ -18,6 +20,8 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="member")
     is_active = db.Column(db.Boolean, nullable=False, default=True)
+    failed_login_count = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True),
         nullable=False,

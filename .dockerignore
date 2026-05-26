@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+.env.prod
+.git/
+.gitignore
+*.md
+tests/
+.venv/
+node_modules/
+.pytest_cache/
+.cursor/
+.vscode/
+local_data/
+project_docs/

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_badge, render_button %}
+
+{% block title %}Admin{% endblock %}
+
+{% block content %}
+<section class="space-y-6">
+  <header class="flex items-center justify-between">
+    <div>
+      <h1 class="font-display text-[1.75rem] leading-none text-ink-900">Admin</h1>
+      <p class="mt-1 text-sm text-ink-400">Signed in as {{ current_user.username }}.</p>
+    </div>
+    <form method="POST" action="{{ url_for('admin.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button
+        type="submit"
+        class="btn-press rounded-[0.5rem] px-2.5 py-1.5 text-xs font-semibold text-ink-400 transition hover:bg-cream-100 hover:text-ink-700"
+      >
+        Log out
+      </button>
+    </form>
+  </header>
+
+  <div class="grid gap-3 sm:grid-cols-2">
+    <a
+      href="{{ url_for('admin.create_household') }}"
+      class="btn-press rounded-[1rem] border border-clay-200 bg-clay-50 p-4 text-clay-700 shadow-sm transition hover:bg-clay-100"
+    >
+      <div class="text-xs font-semibold uppercase tracking-[0.15em] text-clay-600">New</div>
+      <div class="mt-1 font-display text-lg leading-tight">Create household</div>
+      <p class="mt-1 text-xs text-clay-600">Provision a new household with its owner user.</p>
+    </a>
+    <a
+      href="{{ url_for('admin.create_user') }}"
+      class="btn-press rounded-[1rem] border border-moss-200 bg-moss-50 p-4 text-moss-700 shadow-sm transition hover:bg-moss-100"
+    >
+      <div class="text-xs font-semibold uppercase tracking-[0.15em] text-moss-600">New</div>
+      <div class="mt-1 font-display text-lg leading-tight">Create user</div>
+      <p class="mt-1 text-xs text-moss-600">Add a member or owner to an existing household.</p>
+    </a>
+  </div>
+
+  <section class="rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-[0.15em] text-ink-400">Households</h2>
+    {% if households %}
+      <ul class="divide-y divide-cream-100">
+        {% for household, member_count in households %}
+          <li class="flex items-center justify-between py-2.5">
+            <div>
+              <div class="font-semibold text-ink-900">{{ household.name }}</div>
+              <div class="text-xs text-ink-400">#{{ household.id }}</div>
+            </div>
+            {{ render_badge(member_count ~ " / 5 members", tone="moss" if member_count < 5 else "warm") }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm text-ink-400">No households yet.</p>
+    {% endif %}
+  </section>
+
+  <section class="rounded-[1rem] border border-cream-200 bg-white/80 p-4 shadow-sm backdrop-blur sm:p-5">
+    <h2 class="mb-3 text-sm font-semibold uppercase tracking-[0.15em] text-ink-400">Users</h2>
+    {% if users %}
+      <ul class="divide-y divide-cream-100">
+        {% for user in users %}
+          <li class="flex items-center justify-between py-2.5">
+            <div>
+              <div class="font-semibold text-ink-900">{{ user.username }}</div>
+              <div class="text-xs text-ink-400">{{ user.household.name }}</div>
+            </div>
+            {{ render_badge(user.role, tone="warm" if user.role == "owner" else "neutral") }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-sm text-ink-400">No users yet.</p>
+    {% endif %}
+  </section>
+</section>
+{% endblock %}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import render_button, render_field %}
 
-{% block title %}Login{% endblock %}
+{% block title %}Sign in{% endblock %}
 
 {% block main_class %}relative mx-auto flex min-h-screen w-full max-w-lg items-center px-4 py-8 sm:px-6{% endblock %}
 
@@ -21,11 +21,9 @@
       </div>
     </form>
 
-    <div class="mt-6 flex items-center justify-center gap-4 text-sm">
-      <a class="btn-press font-semibold text-ink-400 transition hover:text-ink-700" href="{{ url_for('auth.register') }}">Create household</a>
-      <span class="text-cream-300">|</span>
-      <a class="btn-press font-semibold text-ink-400 transition hover:text-ink-700" href="{{ url_for('auth.register_join') }}">Join with code</a>
-    </div>
+    <p class="mt-6 text-center text-sm text-ink-400">
+      Accounts are created by the household admin. Ask them for access.
+    </p>
   </div>
 </section>
 {% endblock %}

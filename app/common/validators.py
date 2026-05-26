@@ -4,7 +4,6 @@ from decimal import Decimal, InvalidOperation
 
 
 USERNAME_PATTERN = re.compile(r"^[\w]+$", re.UNICODE)
-INVITE_CODE_PATTERN = re.compile(r"^[A-Z0-9]+$")
 
 
 def normalize_text(value):
@@ -118,6 +117,18 @@ def validate_password(password):
     return password
 
 
+def validate_admin_password(password):
+    """Admin accounts require a noticeably stronger password."""
+    if not password:
+        raise ValueError("Password is required.")
+    if len(password) < 16:
+        raise ValueError("Admin password must be at least 16 characters.")
+    if _contains_control_characters(password):
+        raise ValueError("Admin password contains invalid characters.")
+
+    return password
+
+
 def validate_household_name(household_name):
     """Validate household display names."""
     if not household_name or not str(household_name).strip():
@@ -130,17 +141,3 @@ def validate_household_name(household_name):
         raise ValueError("Household name contains invalid characters.")
 
     return household_name
-
-
-def validate_invite_code(invite_code):
-    """Validate invite code shape and normalize to uppercase."""
-    if not invite_code or not str(invite_code).strip():
-        raise ValueError("Invite code is required.")
-
-    invite_code = unicodedata.normalize("NFKC", str(invite_code)).strip().upper()
-    if len(invite_code) > 32:
-        raise ValueError("Invite code must be 32 characters or fewer.")
-    if not INVITE_CODE_PATTERN.match(invite_code):
-        raise ValueError("Invite code contains invalid characters.")
-
-    return invite_code

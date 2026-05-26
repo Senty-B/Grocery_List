@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "_macros.html" import render_button, render_field %}
+
+{% block title %}Sign in{% endblock %}
+
+{% block main_class %}relative mx-auto flex min-h-screen w-full max-w-lg items-center px-4 py-8 sm:px-6{% endblock %}
+
+{% block content %}
+<section class="w-full">
+  <div class="rounded-[1rem] border border-cream-200 bg-white/90 p-5 shadow-sm backdrop-blur sm:p-6">
+    <div class="mb-6">
+      <h1 class="font-display text-[1.75rem] leading-none text-ink-900">Sign in</h1>
+    </div>
+
+    <form method="POST" class="space-y-4">
+      {{ form.hidden_tag() }}
+      {{ render_field(form.username, autocomplete="username", placeholder="Username") }}
+      {{ render_field(form.password, autocomplete="current-password", placeholder="Password") }}
+      <div class="pt-2">
+        {{ render_button(form.submit.label.text) }}
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

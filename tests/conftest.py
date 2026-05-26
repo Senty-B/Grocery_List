@@ -10,8 +10,8 @@ from app.extensions import db as _db
 app = create_app("testing")
 
 TRUNCATE_ALL = text(
-    "TRUNCATE TABLE activity_log, grocery_item, favorite_item, users, household "
-    "RESTART IDENTITY CASCADE"
+    "TRUNCATE TABLE activity_log, grocery_item, favorite_item, users, household, "
+    "admin_user RESTART IDENTITY CASCADE"
 )
 
 
@@ -70,3 +70,17 @@ def authenticated_client(app, db):
             session["_fresh"] = True
         db.session.refresh(user)
         yield client, user
+
+
+@pytest.fixture
+def admin_client(app, db):
+    """Client logged in as an admin account."""
+    from app.admin.services import create_admin_account
+
+    admin = create_admin_account("rootadmin", "a" * 16)
+    with app.test_client() as client:
+        with client.session_transaction() as session:
+            session["_user_id"] = f"admin:{admin.id}"
+            session["_fresh"] = True
+        db.session.refresh(admin)
+        yield client, admin

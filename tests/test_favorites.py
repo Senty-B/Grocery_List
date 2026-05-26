@@ -1,19 +1,16 @@
 from decimal import Decimal
 
+from app.auth.services import register_owner as _create_owner
 from app.models.favorite_item import FavoriteItem
 from app.models.grocery_item import GroceryItem
 from app.models.user import User
 
 
 def register_owner(client, db, username="alice"):
+    _create_owner(username, "password123", f"{username} House")
     client.post(
-        "/register",
-        data={
-            "username": username,
-            "password": "password123",
-            "confirm_password": "password123",
-            "household_name": f"{username} House",
-        },
+        "/login",
+        data={"username": username, "password": "password123"},
         follow_redirects=False,
     )
     return db.session.execute(db.select(User).filter_by(username=username)).scalar_one()

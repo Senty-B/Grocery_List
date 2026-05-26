@@ -137,7 +137,7 @@ The system will be implemented as a modular monolith with a server-rendered web 
 | **6.1 Frontend** | HTML5, Jinja2 templates, Tailwind CSS, HTMX, minimal vanilla JavaScript | This provides a responsive mobile UI without the complexity of React/Vue build systems, client-side state management, or API-heavy frontend logic. |
 | **6.2 Backend** | Python 3.12+, Flask, Flask-Login, SQLAlchemy, Alembic, WTForms or schema-based server validation layer, CSRF protection via Flask-WTF or equivalent | Flask is sufficient for the domain and keeps the implementation lightweight. SQLAlchemy and Alembic provide maintainable persistence and migrations. |
 | **6.3 Database** | PostgreSQL 16+ | PostgreSQL supports transactional integrity, safe concurrent writes, mature indexing, and long-term maintainability. |
-| **6.4 Deployment / runtime** | Docker, Docker Compose, Gunicorn; optional Nginx or Caddy reverse proxy if internet-exposed | — |
+| **6.4 Deployment / runtime** | Docker, Docker Compose, Gunicorn, host-based Nginx reverse proxy with Let's Encrypt (via Certbot) for TLS | Nginx runs on the VPS host (not in a container) and terminates HTTPS for `grocery.<your-domain>`, proxying to the web container bound to `127.0.0.1:18080`. |
 
 ---
 
@@ -617,20 +617,21 @@ Server-rendered templates with HTMX fragments.
 
 #### 15.1 Deployment topology
 
-For v1, use a two-container setup:
+For v1, use a two-container stack behind a **host-based reverse proxy**:
 
-- application container
-- PostgreSQL container
+- application container (Flask + Gunicorn), bound to `127.0.0.1:18080` on the host
+- PostgreSQL container, internal to the Docker network only
+- **Nginx on the host** (not containerized) terminates HTTPS for `grocery.<your-domain>` and proxies to the web container
+- **Certbot on the host** manages a Let's Encrypt certificate and auto-renews it every 60 days via a systemd timer
 
-**Optional**
-
-- reverse proxy container if externally reachable
+The web container is never exposed on the public interface; only Nginx listens on ports 80/443.
 
 #### 15.2 Runtime stack
 
-- Gunicorn serving Flask app
+- Gunicorn serving Flask app (2 workers, 120 s timeout)
 - PostgreSQL as persistent database
-- Docker volumes for database persistence
+- Docker named volumes for database persistence
+- `werkzeug.middleware.proxy_fix.ProxyFix` wraps the WSGI app in production so Flask trusts the `X-Forwarded-*` headers set by Nginx (required for `SESSION_COOKIE_SECURE` to work correctly behind TLS termination)
 
 #### 15.3 Environment configuration
 
@@ -640,14 +641,19 @@ Use environment variables for:
 - database URL
 - password hashing config
 - session cookie security flags
+- `PREFERRED_URL_SCHEME=https` (so `url_for(_external=True)` produces HTTPS links)
 - log level
 - optional invite code settings
 
 #### 15.4 Recommended environments
 
-- local development
-- staging-like local compose environment
-- production on VPS or home server
+- local development (Docker Compose + Flask dev server)
+- staging-like local compose environment (`compose.prod.yaml` against a throwaway `.env`)
+- production on VPS with registered domain and Let's Encrypt TLS
+
+#### 15.5 Subdomain pattern (future services)
+
+The apex domain (`<your-domain>`) stays free for a landing page. Each service gets its own subdomain (e.g. `grocery.<your-domain>`, `openclaw.<your-domain>`), its own Nginx server block, and its own Let's Encrypt cert. Adding a service does not modify the grocery stack.
 
 ---
 

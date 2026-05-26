@@ -2728,21 +2728,25 @@ docker compose exec web flask db upgrade
 **Dependencies:** Ticket 12  
 **Estimated effort:** Medium
 
+> **Canonical source:** `tickets/13_production_deployment.md`. The summary below is kept in this aggregate file for orientation, but the per-ticket file is authoritative.
+
 #### Why This Matters
 
-This ticket prepares everything needed for production deployment on the Hostinger VPS with Tailscale private access.
+This ticket prepares everything needed for production deployment on the Hostinger VPS. Remote access is provided by a **host-based Nginx reverse proxy** bound to `grocery.<your-domain>`, with HTTPS supplied by a **Let's Encrypt certificate** issued by Certbot. The web container stays bound to `127.0.0.1:18080` and is never exposed to the public interface.
 
 #### Reference
 
-- `Production_Cutover_Runbook.md` (full document — the canonical go-live guide)
+- `tickets/13_production_deployment.md` (canonical per-ticket spec)
+- `Production_Cutover_Runbook.md` (full go-live guide)
 - `Hostinger_Deployment_Reference.md` (operational quick reference)
+- `docker/nginx/grocery.conf.example` (Nginx site template)
 - `.env.prod.example` (already in repo)
 
 #### Tasks
 
 **1. Verify `.env.prod.example` is complete**
 
-The file should contain all environment variables the app needs. Compare against `app/config.py` and the Production Cutover Runbook section 6. The existing `.env.prod.example` looks correct.
+The file should contain all environment variables the app needs. Compare against `app/config.py` and the Production Cutover Runbook section 6.
 
 **2. Configure Gunicorn for production**
 
@@ -2754,28 +2758,26 @@ The `Dockerfile` CMD already uses Gunicorn. Verify settings:
 
 **3. Ensure migration command works in container**
 
-Test this command:
-
 ```bash
 docker compose -f compose.prod.yaml --env-file /opt/grocery-app/shared/env/.env.prod exec web flask db upgrade
 ```
 
 **4. Add production security settings to `app/config.py`**
 
-Ensure `ProductionConfig` reads all cookie/security settings from environment:
+`ProductionConfig` must read all cookie/security settings from environment, and `app/__init__.py` must wrap the WSGI app in `werkzeug.middleware.proxy_fix.ProxyFix(..., x_for=1, x_proto=1, x_host=1)` so Flask trusts the `X-Forwarded-*` headers Nginx sets. Without `ProxyFix`, `SESSION_COOKIE_SECURE=true` will refuse to set session cookies because Flask thinks the request is HTTP.
 
-```python
-class ProductionConfig(BaseConfig):
-    DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
-    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true"
-    SESSION_COOKIE_HTTPONLY = os.environ.get("SESSION_COOKIE_HTTPONLY", "true").lower() == "true"
-    SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
-```
+**5. Configure host-based Nginx reverse proxy with Let's Encrypt TLS**
 
-**5. Document the deployment steps**
+- Add a DNS A record for `grocery.<your-domain>` pointing at the VPS public IP; verify with `dig grocery.<your-domain> +short`.
+- Install Nginx + Certbot on the VPS: `sudo apt install -y nginx certbot python3-certbot-nginx`.
+- Open firewall ports 80 and 443.
+- Place a minimal HTTP-only server block in `/etc/nginx/sites-available/grocery` with `server_name grocery.<your-domain>;` and `proxy_pass http://127.0.0.1:18080;`.
+- Run `sudo certbot --nginx -d grocery.<your-domain>` — this issues a trusted cert, rewrites Nginx to add the HTTPS block and HTTP→HTTPS redirect, and installs a systemd timer for auto-renewal.
+- Verify renewal with `sudo certbot renew --dry-run`.
 
-Ensure the Production Cutover Runbook is accurate and can be followed step by step. The file already exists — review it and fix any references that don't match the actual code structure.
+**6. Document the deployment steps**
+
+Ensure the Production Cutover Runbook is accurate and can be followed step by step.
 
 #### Acceptance Criteria
 
@@ -2784,6 +2786,13 @@ Ensure the Production Cutover Runbook is accurate and can be followed step by st
 - [ ] Production compose starts and health checks pass
 - [ ] Migration runs successfully in the production container
 - [ ] Secure cookies are enabled when `SESSION_COOKIE_SECURE=true`
+- [ ] DNS A record for `grocery.<your-domain>` resolves to the VPS public IP
+- [ ] Nginx reverse proxy forwards HTTPS traffic for `grocery.<your-domain>` to `127.0.0.1:18080`
+- [ ] Let's Encrypt cert is loaded from `/etc/letsencrypt/live/grocery.<your-domain>/`
+- [ ] `curl -fsS https://grocery.<your-domain>/health` returns `200 OK` (no `-k` flag needed)
+- [ ] `sudo certbot renew --dry-run` reports "all renewals succeeded"
+- [ ] App reachable at `https://grocery.<your-domain>/login` from an external device with no browser warning
+- [ ] Web container is NOT exposed on the public interface (only `127.0.0.1:18080`)
 - [ ] Production Cutover Runbook matches actual file structure and commands
 
 ---

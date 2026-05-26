@@ -1,0 +1,38 @@
+# Reference Nginx site for the grocery app.
+#
+# Replace <your-domain> with your registered domain (e.g. "example.tech") before use.
+# After running `sudo certbot --nginx -d grocery.<your-domain>`, the cert paths
+# below are created automatically and Certbot will keep this file renewed.
+
+server {
+    listen 80;
+    server_name grocery.funzi.tech;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name grocery.funzi.tech;
+
+    ssl_certificate     /etc/letsencrypt/live/grocery.funzi.tech/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/grocery.funzi.tech/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Enable only after the cert is verified working end-to-end.
+    # HSTS locks clients to HTTPS; breaks access if the cert ever fails.
+    # add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+
+    client_max_body_size 2m;
+
+    location / {
+        proxy_pass         http://127.0.0.1:18080;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}

@@ -9,7 +9,7 @@
 
 ## Why This Matters
 
-This ticket prepares everything needed for production deployment on the Hostinger VPS with Tailscale private access.
+This ticket prepares everything needed for production deployment on the Hostinger VPS.
 
 ## Reference
 
@@ -54,7 +54,26 @@ class ProductionConfig(BaseConfig):
     SESSION_COOKIE_SAMESITE = os.environ.get("SESSION_COOKIE_SAMESITE", "Lax")
 ```
 
-### 5. Document the deployment steps
+### 5. Configure host-based Nginx reverse proxy with Let's Encrypt TLS
+
+Remote access is provided by **Nginx on the VPS host** (not in a container), reverse-proxying HTTPS traffic from `grocery.<your-domain>` to the web container on `127.0.0.1:18080`. See `Hostinger_Deployment_Reference.md` section 6, steps 1 + 9–11 for full commands.
+
+Summary:
+
+- Register the domain and add a DNS **A record** for `grocery.<your-domain>` pointing at the VPS public IP. Verify with `dig grocery.<your-domain> +short`.
+- Install Nginx and Certbot on the VPS host (`sudo apt install -y nginx certbot python3-certbot-nginx`).
+- Open firewall ports 80 and 443.
+- Create an initial HTTP-only server block in `/etc/nginx/sites-available/grocery` with `server_name grocery.<your-domain>;` and a `proxy_pass` to `http://127.0.0.1:18080` (needed for Certbot's HTTP-01 challenge).
+- Enable the site, remove the default site, run `sudo nginx -t`, then `sudo systemctl reload nginx`.
+- Run `sudo certbot --nginx -d grocery.<your-domain>` — this issues a trusted cert, rewrites the Nginx config to add the HTTPS `listen 443 ssl;` block and an HTTP→HTTPS redirect, and installs a systemd timer that auto-renews the cert every 60 days.
+- Optionally replace the Certbot-generated file with the cleaner, documented template at `docker/nginx/grocery.conf.example` (substitute `<your-domain>`), then reload Nginx.
+- Confirm auto-renewal with `sudo certbot renew --dry-run`.
+
+Do **not** expose port 5000 or 18080 directly on the public interface — the web container stays bound to `127.0.0.1:18080` and only Nginx faces the internet.
+
+> **Subdomain pattern:** Future services reuse the same apex by adding a DNS record, a new Nginx server block, and their own Certbot cert — the grocery stack is untouched.
+
+### 6. Document the deployment steps
 
 Ensure the Production Cutover Runbook is accurate and can be followed step by step. The file already exists — review it and fix any references that don't match the actual code structure.
 
@@ -67,4 +86,11 @@ Ensure the Production Cutover Runbook is accurate and can be followed step by st
 - [ ] Production compose starts and health checks pass
 - [ ] Migration runs successfully in the production container
 - [ ] Secure cookies are enabled when `SESSION_COOKIE_SECURE=true`
+- [ ] DNS A record for `grocery.<your-domain>` resolves to the VPS public IP
+- [ ] Nginx reverse proxy is installed on the host and forwards HTTPS traffic for `grocery.<your-domain>` to `127.0.0.1:18080`
+- [ ] Let's Encrypt certificate is issued and loaded from `/etc/letsencrypt/live/grocery.<your-domain>/`
+- [ ] `curl -fsS https://grocery.<your-domain>/health` returns `200 OK` from the VPS itself (no `-k` flag needed)
+- [ ] `sudo certbot renew --dry-run` finishes with "Congratulations, all renewals succeeded"
+- [ ] App is reachable over HTTPS at `https://grocery.<your-domain>/login` from an external device with no browser warning
+- [ ] Web container is NOT exposed on the public interface (only `127.0.0.1:18080`)
 - [ ] Production Cutover Runbook matches actual file structure and commands

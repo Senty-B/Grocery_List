@@ -638,47 +638,68 @@ volumes:
 
 #### Description
 
-Set up production deployment with reverse proxy and SSL.
+Set up production deployment with host-based Nginx reverse proxy and Let's Encrypt TLS for `grocery.<your-domain>`.
 Canonical execution guide for go-live: `Production_Cutover_Runbook.md`.
 
 #### Tasks
 
-- Configure gunicorn for production
-  - `gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app`
-- Set up Nginx or Caddy reverse proxy:
-  - SSL termination
-  - Static file serving
-  - Security headers
-- Configure SSL certificates (Let's Encrypt)
-- Create production `.env` template
+- Configure Gunicorn for production:
+  - `gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 wsgi:app`
+- Set up **host-based Nginx** reverse proxy (Nginx installed on the VPS host, not containerized):
+  - TLS termination
+  - HTTP → HTTPS redirect
+  - Correct `X-Forwarded-*` headers so Flask's `ProxyFix` can trust them
+  - Security headers (`X-Content-Type-Options`, `X-Frame-Options`; HSTS only after cert proven working)
+- Configure TLS via Let's Encrypt:
+  - Add DNS A record `grocery.<your-domain> -> <VPS_IP>`
+  - `sudo apt install -y certbot python3-certbot-nginx`
+  - `sudo certbot --nginx -d grocery.<your-domain>` (issues cert + installs auto-renew timer)
+- Create production `.env` template (`.env.prod.example`)
 - Document deployment steps
 - Add production security settings:
-  - Secure cookies
-  - HSTS headers
-  - Rate limiting
+  - Secure cookies (`SESSION_COOKIE_SECURE=true`, `HTTPONLY`, `SAMESITE=Lax`)
+  - Rate limiting (ticket 15)
+  - HSTS header (uncomment in Nginx config *only after* cert is verified end-to-end)
 
-#### Nginx Config
+#### Nginx Config (reference — see `docker/nginx/grocery.conf.example`)
 
 ```nginx
 server {
-    listen 443 ssl http2;
-    server_name grocery.example.com;
-    ssl_certificate /etc/letsencrypt/.../fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/.../privkey.pem;
+    listen 80;
+    server_name grocery.<your-domain>;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name grocery.<your-domain>;
+
+    ssl_certificate     /etc/letsencrypt/live/grocery.<your-domain>/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/grocery.<your-domain>/privkey.pem;
+    include             /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
+
     location / {
-        proxy_pass http://web:5000;
-        proxy_set_header Host $host;
+        proxy_pass         http://127.0.0.1:18080;   # host loopback, NOT Docker service name
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
     }
 }
 ```
 
+> Note: `proxy_pass` targets `127.0.0.1:18080`, not a Docker service hostname like `web:5000`. That's because Nginx runs on the host, not inside the Docker network. The compose file binds the web container's port 5000 to the host's `127.0.0.1:18080`.
+
 #### Acceptance Criteria
 
-- HTTPS works with valid certificate
+- HTTPS works with a valid Let's Encrypt cert at `https://grocery.<your-domain>`
 - HTTP redirects to HTTPS
+- `sudo certbot renew --dry-run` succeeds (auto-renewal is wired up)
 - Security headers present
-- Static files served by nginx
-- Production logs visible
+- Web container is NOT exposed on the public interface (only bound to `127.0.0.1:18080`)
+- Production logs visible via `docker compose logs web`
 
 ---
 

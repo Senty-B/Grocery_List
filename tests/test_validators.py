@@ -4,8 +4,8 @@ import pytest
 
 from app.common.validators import (
     normalize_text,
+    validate_admin_password,
     validate_household_name,
-    validate_invite_code,
     validate_item_name,
     validate_note,
     validate_password,
@@ -103,10 +103,11 @@ def test_validate_household_name_rejects_empty_values():
         validate_household_name("  ")
 
 
-def test_validate_invite_code_normalizes_to_uppercase():
-    assert validate_invite_code("ab12cd34") == "AB12CD34"
+def test_validate_admin_password_requires_sixteen_chars():
+    with pytest.raises(ValueError, match="at least 16"):
+        validate_admin_password("short-password")
 
 
-def test_validate_invite_code_rejects_invalid_characters():
-    with pytest.raises(ValueError, match="invalid characters"):
-        validate_invite_code("ABCD-123")
+def test_validate_admin_password_accepts_long_passphrase():
+    passphrase = "correcthorsebatterystaple"
+    assert validate_admin_password(passphrase) == passphrase

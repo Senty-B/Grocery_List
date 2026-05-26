@@ -1,17 +1,9 @@
 import logging
-import secrets
-import string
 
 from app.extensions import db
 from app.models.activity_log import ActivityLog
 
 logger = logging.getLogger(__name__)
-
-
-def generate_invite_code(length=8):
-    """Generate a cryptographically secure uppercase alphanumeric invite code."""
-    alphabet = string.ascii_uppercase + string.digits
-    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def log_activity(

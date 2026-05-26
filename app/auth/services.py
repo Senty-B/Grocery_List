@@ -1,12 +1,13 @@
 import logging
 
 import bcrypt
+from flask import current_app
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.common.utils import generate_invite_code, log_activity
+from app.auth.lockout import is_locked, record_failure, record_success
+from app.common.utils import log_activity
 from app.common.validators import (
     validate_household_name,
-    validate_invite_code,
     validate_password,
     validate_username,
 )
@@ -31,13 +32,6 @@ def check_password(plain_password, hashed_password):
     )
 
 
-def _generate_unique_invite_code(length=8):
-    invite_code = generate_invite_code(length=length)
-    while Household.query.filter_by(invite_code=invite_code).first():
-        invite_code = generate_invite_code(length=length)
-    return invite_code
-
-
 def register_owner(username, password, household_name):
     """Create a new household and owner account."""
     username = validate_username(username)
@@ -47,10 +41,7 @@ def register_owner(username, password, household_name):
     if User.query.filter_by(username=username).first():
         raise ValueError("Username is already taken.")
 
-    household = Household(
-        name=household_name,
-        invite_code=_generate_unique_invite_code(),
-    )
+    household = Household(name=household_name)
     user = User(
         household=household,
         username=username,
@@ -83,66 +74,36 @@ def register_owner(username, password, household_name):
     return user
 
 
-def join_household(username, password, invite_code):
-    """Create a member account and join an existing household."""
-    username = validate_username(username)
-    password = validate_password(password)
-    invite_code = validate_invite_code(invite_code)
-
-    household = Household.query.filter_by(invite_code=invite_code).first()
-    if not household:
-        raise ValueError("Invalid invite code.")
-
-    active_member_count = User.query.filter_by(
-        household_id=household.id,
-        is_active=True,
-    ).count()
-    if active_member_count >= 5:
-        raise ValueError("This household has reached the maximum of 5 members.")
-
-    if User.query.filter_by(username=username).first():
-        raise ValueError("Username is already taken.")
-
-    user = User(
-        household_id=household.id,
-        username=username,
-        password_hash=hash_password(password),
-        role="member",
-    )
-
-    try:
-        db.session.add(user)
-        db.session.commit()
-    except SQLAlchemyError as error:
-        db.session.rollback()
-        logger.exception(
-            "Failed to add user '%s' to household '%s'",
-            username,
-            household.name,
-        )
-        raise ValueError("Could not join household right now.") from error
-
-    logger.info("User '%s' joined household '%s'", user.username, household.name)
-    log_activity(
-        household_id=household.id,
-        user_id=user.id,
-        action_type="join_household",
-        entity_type="household",
-        entity_id=household.id,
-        payload={"username": user.username},
-    )
-    return user
-
-
 def authenticate_user(username, password):
-    """Verify credentials and return the active user when valid."""
+    """Validate credentials against the `users` table.
+
+    Returns a tuple ``(user_or_none, outcome)`` where outcome is one of:
+      * ``"ok"``      - credentials valid, user returned
+      * ``"locked"``  - correct account but currently locked out
+      * ``"invalid"`` - missing or wrong credentials
+    """
     username = (username or "").strip()
     password = password or ""
 
     if not username or not password:
-        return None
+        return None, "invalid"
 
-    user = User.query.filter_by(username=username, is_active=True).first()
-    if user and check_password(password, user.password_hash):
-        return user
-    return None
+    threshold = current_app.config.get("USER_LOGIN_LOCKOUT_THRESHOLD", 10)
+    lockout_minutes = current_app.config.get("USER_LOGIN_LOCKOUT_MINUTES", 15)
+
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        return None, "invalid"
+
+    if is_locked(user):
+        return None, "locked"
+
+    if not user.is_active or not check_password(password, user.password_hash):
+        record_failure(user, threshold, lockout_minutes)
+        if is_locked(user):
+            logger.warning("User '%s' locked out after repeated failures", username)
+            return None, "locked"
+        return None, "invalid"
+
+    record_success(user)
+    return user, "ok"
