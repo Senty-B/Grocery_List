@@ -21,3 +21,5 @@ node_modules/
 local_data/
 skills-local.json
 .agents/
+.cursor/
+.vscode/
