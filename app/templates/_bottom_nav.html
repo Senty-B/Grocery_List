@@ -1,6 +1,6 @@
 {% if current_user.is_authenticated and not current_user.is_admin %}
-<nav class="fixed inset-x-0 bottom-0 z-40 border-t border-cream-200 bg-white/95 backdrop-blur">
-  <div class="mx-auto grid max-w-4xl grid-cols-3 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+<nav class="sticky mb-0 inset-x-0 top-auto bottom-0 z-40 border-t border-t-black bg-white/40 backdrop-blur">
+  <div class="mx-auto grid max-w-4xl grid-cols-3 px-2 pt-1.5 pb-2">
     {% set nav_items = [
       ("grocery.index", "/grocery", "/", "List", "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2", "clay"),
       ("favorites.index", "/favorites", None, "Favorites", "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.98 10.1c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z", "honey"),
